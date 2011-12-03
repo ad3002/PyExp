@@ -99,9 +99,22 @@ class AbstractFileIO(object):
         for item in source:
             self._data.append(item)
 
-    def iterate(self):
+    def iterate(self, skip_empty=True):
         """ Iterate over data."""
-        for item in self._data:
+        if skip_empty:
+            for item in self._data:
+                if not item:
+                    continue
+                yield item
+        else:
+            for item in self._data:
+                yield item
+
+    def iterate_with_func(self, pre_func, iter_func):
+        """ Iterate over data with given iter_func.
+        And data can be preprocessed with pre_func."""
+        self._data = pre_func(self._data)
+        for item in iter_func(self._data):
             yield item
 
     def do(self, cf, **args):
@@ -117,7 +130,7 @@ class AbstractFileIO(object):
         self._data = cf(self._data, **args)
 
     def clear(self):
-        """ Clear data."""
+        """ Remove data."""
         self._data = None
 
     def do_with_iter(self, cf, **args):
@@ -203,6 +216,15 @@ class AbstractFolderIO(object):
                     with open(path, "rb") as fh:
                         yield fh.read()
 
+    def iter_file_content_and_names(self):
+        """ iter over files in folder. Return file content, file_name, file_path."""
+        for root, dirs, files in os.walk(self.folder, topdown=False):
+            for name in files:
+                if re.search(self.mask, name):
+                    path = os.path.join(root, name)
+                    with open(path, "rb") as fh:
+                        yield fh.read(), name, path
+
     def move_files_by_mask(self, dist_folder):
         for file_path in self.iter_filenames():
             dist_file = os.path.join(dist_folder, os.path.split(file_path)[-1])
@@ -215,6 +237,8 @@ class AbstractFolderIO(object):
 class AbstractFoldersIO(AbstractFileIO):
     """ Abstract class for working with abstract data in folder of folders."""
     pass
+
+
 
 def sc_iter_filepath_folder(folder, mask="."):
     """ Shortcut for iterating file path in given folder."""
@@ -239,3 +263,38 @@ def sc_move_files(folder, dist_folder, mask="."):
     reader = AbstractFolderIO(folder, mask=mask)
     reader.move_files_by_mask(dist_folder)
 
+def sc_process_file(file_name, cf, args_dict, join=False):
+    """ Shortcut for processing each file in folder
+        with given cf funciton."""
+    reader = AbstractFileIO()
+    reader.read(file_name)
+    if join:
+        reader.join()
+    for text, name, file in reader.iter_file_content_and_names():
+        args_dict["name"] = name
+        text = cf(text, **args_dict)
+        with open(file, "w") as fh:
+            fh.write(text)
+
+def sc_process_folder(folder, cf, args_dict, mask="."):
+    """ Shortcut for processing each file in folder
+        with given cf funciton."""
+    reader = AbstractFolderIO(folder, mask=mask)
+    for text, name, file in reader.iter_file_content_and_names():
+        args_dict["name"] = name
+        text = cf(text, **args_dict)
+        with open(file, "w") as fh:
+            fh.write(text)
+
+def sc_process_folder_to_other(folder, output_folder, cf, args_dict, mask="."):
+    """ Shortcut for processing each file in folder
+        with given cf funciton."""
+    assert hasattr(cf, "__call__")
+    reader = AbstractFolderIO(folder, mask=mask)
+    for text, name, file in reader.iter_file_content_and_names():
+        args_dict["name"] = name
+        text = cf(text, **args_dict)
+        output_file = os.path.join(output_folder,
+                                   name)
+        with open(output_file, "w") as fh:
+            fh.write(text)
