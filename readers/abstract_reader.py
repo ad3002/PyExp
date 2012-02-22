@@ -21,6 +21,7 @@
 """
 import os
 import re
+import pickle
 
 class AbstractFileIO(object):
     """ Abstract class for working with abstract data.
@@ -298,3 +299,10 @@ def sc_process_folder_to_other(folder, output_folder, cf, args_dict, mask="."):
                                    name)
         with open(output_file, "w") as fh:
             fh.write(text)
+
+def read_pickle_file(pickle_file):
+    ''' Read pickle file and retrun its content.
+    '''
+    with open(pickle_file, "r") as fh:
+        data = pickle.load(fh)
+    return data
