@@ -4,16 +4,31 @@
 #@created: 07.06.2011
 #@author: Aleksey Komissarov
 #@contact: ad3002@gmail.com 
-
+'''
+Experiment abstraction.
+'''
 import time
+import random
+import urllib
+import simplejson
+from PyExp.readers.abstract_reader import sc_iter_filename_folder
+
+STARTED = "Started"
+FINISHED = "Finished"
 
 class Timer(object):
     '''
-    Timer wrapper for code blocks. 
+    Timer wrapper for code blocks.
     Using:
-        with Timer("Do something"):
-            your_function()
+
+    >>> from PyExp.experiments.abstract_experiment import Timer
+    >>> with Timer("Do something"):
+    ...     sum([1,2,3])
+    Started: [Do something]...
+    6
+    Finished: [Do something]  elapsed: 2.88486480713e-05
     '''
+    
     def __init__(self, name=None):
         self.name = name
         if self.name:
@@ -25,54 +40,111 @@ class Timer(object):
     def __exit__(self, type, value, traceback):
         if self.name:
             print 'Finished: [%s]' % self.name,
-        print ' elapsed: %s' % (time.time() - self.timer_start)
+        delta = time.time() - self.timer_start
+        print ' elapsed: %s' % delta
 
 class AbstractStep(object):
-    '''
-        Abstract step for exepriment is described by step name, input value,
-        and core function.
+    ''' Abstract step for exepriment is described by step name, input value,
+    and core function.
+
+    >>> name = "step_summation"
+    >>> cf = sum
+    >>> input = [1,2,3]
+    >>> step = AbstractStep(name, data, cf, use_env=False)
+
     '''
 
-    def __init__(self, name, input, cf, use_env=False):
+    def __init__(self, name, data, cf, save_output=False, check_f=None, check_p=None):
 
         self.name = name
         self.sid = None
-        self.input = input
+        self.input = data
         self.cf = cf
-        self.use_env = use_env
+        self.check_f = check_f
+        self.check_p = check_p
+        self.save_output = save_output
         assert hasattr(cf, "__call__")
+        if self.check_f:
+            assert hasattr(self.check_f, "__call__")
+        if self.check_p:
+            assert isinstance(self.check_p, str)
+        
 
     def __str__(self):
         return self.name
 
+    def get_as_dict(self):
+        return {
+            'name': self.name,
+            'cf': self.cf,
+            'check': self.check_f,
+            'pre': self.check_p,
+            'save_output': self.save_output,
+        }
 
-class AbstractExperiment(object):
-    """
-        Class for an abstract experiment.
-        
-        An experimenr is a number of steps (AbstractStep).
-        
-        Public properties:
-        enviroment is a dictionary of values used by steps.
-        
-        Public methods:
-        add_step(self, step)
-        get_all_steps(self) -> list of step objects
-        get_step(self, sid) -> step object
-        remove_step(self, sid)
-        change_step(self, sid, new_step)
-        execute(self, start_sid=0, end_sid=None)
-        clear_env(self)
-    """
+class AbstractExperimentSettings(object):
+
+    config = {}
 
     def __init__(self):
+        self.folders = {}
+        self.files = {}
+        self.other = {}
+
+    def as_dict(self):
+        return {"files": self.files,
+              "folders": self.folders,
+              "other": self.other,
+              "config": self.config,
+        }
+
+class AbstractExperiment(object):
+    """ Class for an abstract experiment.
+    
+    An experiment is a sequence of steps (AbstractStep).
+    
+    Public properties:
+
+    - settings is a dictionary of values used by steps.
+    
+    Public methods:
+    
+    - add_step(self, step)
+    - get_all_steps(self) -> list of step objects
+    - get_step(self, sid) -> step object
+    - remove_step(self, sid)
+    - change_step(self, sid, new_step)
+    - execute(self, start_sid=0, end_sid=None)
+    - clear_env(self)
+    """
+
+    def __init__(self, settings, project, name=None, logger=None, force=False, manager=None):
         """ Init class """
+        if not name:
+            name = 'default'
+        if hasattr(logger, "__call__"):
+            self.logger = logger
+        else:
+            self.logger = None
+        self.settings = settings
+        self.project = project
+        self.name = name
+        self.force = force
         self.sp = 0
+        self.pid = project["pid"]
         self.sid2step = {}
-        self.enviroment = {}
+        self.all_steps = {}
+        self.init_steps()
+        self.manager = manager
+        self.settings["manager"] = manager
+
+    def init_steps(self):
+        ''' Add avaliable steps.'''
+        raise NotImplemented
 
     def add_step(self, step):
         """ Add a step to workflow."""
+        assert step.__class__ == AbstractStep
         step.sid = self.sp
         self.sid2step[step.sid] = step
         self.sp += 1
@@ -82,13 +154,31 @@ class AbstractExperiment(object):
         return [self.sid2step[i] for i in xrange(0, self.sp) if self.sid2step[i]]
 
     def print_steps(self):
+        ''' Print sequence of added steps.'''
         steps = self.get_all_steps()
         for i, step in enumerate(steps):
             print "Step %s: %s" % (i, str(step))
 
     def get_step(self, sid):
         """ Get step by sid."""
+        if sid < 0 or sid > self.sp:
+            return  None
         return self.sid2step[sid]
+
+    def find_step(self, name):
+        """ Return step dict by name from avaliable steps."""
+        for step_dict in self.all_steps:
+            if name == step_dict["name"]:
+                return step_dict
+        return None
+
+    def find_steps_by_stage(self, stage):
+        """ Return step dicts by stage name from avaliable steps."""
+        result = []
+        for step_dict in self.all_steps:
+            if stage == step_dict["stage"]:
+                result.append(step_dict)
+        return result
 
     def remove_step(self, sid):
         """ Remove a step by id."""
@@ -103,22 +193,149 @@ class AbstractExperiment(object):
         """ Execute sequence of steps."""
         steps = self.get_all_steps()
         for step in steps[start_sid:end_sid]:
+            # refresh project
+            self.project, settings_ = self.manager.get_project(self.project["pid"])
+            # check prerequisites
+            if "status" in self.project and step.check_p:
+                if step.check_p in self.project["status"]:
+                    status_p = self.project["status"][step.check_p]
+                    if status_p != "OK":
+                        print "Previous step %s's status is %s" % (step.check_p, status_p)
+                        continue
+            # skip finished
+            if not self.force:
+                if step.name in self.project["status"]:
+                    if self.project["status"][step.name] == "OK":
+                        print "Skipped completed step: %s" % step.name
+                        continue
+            if self.logger:
+                print "Logget, start event", self.logger(self.pid, self.name, step.sid, step.name, STARTED)
             with Timer(step.name):
-                if not step.use_env:
-                    if type(step.input) is tuple:
-                        result = step.cf(*step.input)
+                # save step output
+                if step.input is None:
+                    result = step.cf(self.settings, self.project)
+                elif isinstance(step.input, dict):
+                    result = step.cf(self.settings, self.project, **step.input)
+                elif isinstance(step.input, list) or isinstance(step.input, tuple):
+                    result = step.cf(self.settings, self.project, *step.input)
+                else:
+                    result = step.cf(self.settings, self.project, step.input)
+                if self.logger:
+                    print "Logget, finish event", self.logger(self.pid, self.name, step.sid, step.name, FINISHED)
+                # save step output
+                if step.save_output:
+                    if result is None:
+                        pass
+                    if isinstance(result, dict):
+                        for key, value in result.items():
+                            self.settings[key] = value
                     else:
-                        result = step.cf(step.input)
-                else:
-                    result = step.cf(step.input, self.enviroment)
-                if result is None:
-                    continue
-                if result.__class__ is dict:
-                    for key, value in result.items():
-                        self.enviroment[key] = value
-                else:
-                    self.enviroment[step.name] = result
+                        self.settings[step.name] = result
+            # post verification
+            self.check_step(step.get_as_dict())
+        # send to server
+        self.logger_update_project(self.project["pid"],
+                        self.project)
+    
+    def check_step(self, step):
+        if not "check" in step:
+            print "Verification for step %s is absent" % step["name"]
+            return None
+        if step["check"]:
+            if not hasattr(step["check"], "__call__"):
+                print "Uncallable function for step %s" % step["name"]
+                return None
+            if self.force:
+                if self.project["status"][ step["name"]] == "OK":
+                    return "OK"
+            result = step["check"](self.settings, self.project)
+            if not result:
+                print "Result for step %s is None" % step["name"]
+                result = "None"
+            # send to server
+            self.project["status"][step["name"]] = result
+            self.logger_update_status(self.project["pid"],  step["name"], result)
+            return result
+        return None
 
-    def clear_env(self):
-        """ Clear enviroment."""
-        self.enviroment = None
+    def check_avalibale_steps(self):
+        steps = self.get_avaliable_steps()
+        for step in steps:
+            print step["name"], self.check_step(step)
+        # send to server
+        self.logger_update_project(self.project["pid"],
+                        self.project)
+
+    def reset_avalibale_steps(self):
+        steps = self.get_avaliable_steps()
+        for step in steps:
+            self.project["status"][step["name"]] = None
+        # send to server
+        self.logger_update_project(self.project["pid"],
+                        self.project)
+
+    def clear_settings(self):
+        """ Clear settings."""
+        self.settings = None
+
+    def get_settings(self):
+        """ Get settings."""
+        return self.settings
+
+    def get_as_dict(self):
+        """ Dictionary representation of experiment."""
+        return {
+            'name': self.name,
+            'steps': [ x.get_as_dict() for x in self.get_all_steps()], 
+        }
+
+    def get_avaliable_steps(self):
+        ''' Return registered steps.'''
+        return self.all_steps
+
+
+    def logger_update_status(self, pid, step_name, status):
+        if not "config" in self.settings or not "url_status_update" in self.settings["config"]:
+            return
+        url = self.settings["config"]["url_status_update"]
+        data = {
+            'pid': pid,
+            'step_name': step_name,
+            'status':status,
+        }
+        try:
+            data = urllib.urlencode(data)
+            resp = urllib.urlopen(url, data).read()
+            print pid, step_name, status, resp
+        except Exception, e:
+            print e
+            time.sleep(3)
+            data = urllib.urlencode(data)
+            resp = urllib.urlopen(url, data).read()
+            print pid, step_name, status, resp
+
+    def logger_update_project(self, pid, project):
+        if self.manager:
+            self.manager.save(pid, project)
+        if not "config" in self.settings or not "url_project_update" in self.settings["config"]:
+            return
+        url = self.settings["config"]["url_project_update"]
+        project = simplejson.dumps(project)
+        data = {
+            'project': project,
+        }
+        data = urllib.urlencode(data)
+        resp = urllib.urlopen(url, data).read()
+        print pid, resp
+
+    def check_and_upload_project(self):
+        if not "status" in self.project:
+            self.project["status"] = {}
+        steps = self.get_avaliable_steps()
+        for step in steps:
+            if not step["name"] in self.project["status"]:
+                self.project["status"][step["name"]] = None
+                self.check_step(step)
+        self.logger_update_project(self.project["pid"],
+                        self.project)
+

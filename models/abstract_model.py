@@ -6,20 +6,26 @@
 #@contact: ad3002@gmail.com 
 
 class AbstractModel(object):
-    """ Class for data wrapping.
+    """ Сlass for data wrapping.
         
-        Public properties:
-        
-        dumpable_attributes
-        int_attributes
-        float_attributes
-        
-        Public methods:
-        
-        Private methods:
-        
-        __str__(self) used dumpable_attributes
-        set_with_dict(self, dictionary)
+    
+    Private methods:
+    
+    - __str__(self) used dumpable_attributes
+    - set_with_dict(self, dictionary)
+
+    Initiation. Create attributes accordong to
+
+    public properties:
+    
+
+    - dumpable_attributes
+    - int_attributes
+    - float_attributes
+    - list_attributes
+    - list_attributes_types
+    - other_attributes
+
     """
 
     dumpable_attributes = []
@@ -30,6 +36,15 @@ class AbstractModel(object):
     other_attributes = {}
 
     def __init__(self):
+        ''' Create attributes accordong to
+
+        - dumpable_attributes
+        - int_attributes
+        - float_attributes
+        - list_attributes
+        - list_attributes_types
+        - other_attributes
+        '''
         for attr in self.dumpable_attributes:
             setattr(self, attr, None)
         for attr in self.int_attributes:
@@ -41,7 +56,7 @@ class AbstractModel(object):
 
     def __str__(self):
         """ Get string representation with fields
-            defined in dumpable_attributes """
+            defined in dumpable_attributes."""
         self.preprocess_data()
         result = ""
         for attr in self.dumpable_attributes:

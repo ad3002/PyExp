@@ -7,42 +7,46 @@
 """
     Classes:
     
-    AbstractFileIO(object)
-    AbstractFolderIO(object)
-    AbstractFoldersIO(object)
+    - AbstractFileIO(object)
+    - AbstractFolderIO(object)
+    - AbstractFoldersIO(object)
     
     Shortcuts:
     
-    sc_iter_filepath_folder(folder, mask=".")
-    sc_iter_filename_folder(folder, mask=".")
-    sc_iter_filedata_folder(folder, mask=".")
-    sc_move_files(folder, dist_folder, mask=".")
+    - sc_iter_filepath_folder(folder, mask=".")
+    - sc_iter_filename_folder(folder, mask=".")
+    - sc_iter_filedata_folder(folder, mask=".")
+    - sc_move_files(folder, dist_folder, mask=".")
 
 """
+
 import os
 import re
 import pickle
+import shutil
 
 class AbstractFileIO(object):
     """ Abstract class for working with abstract data.
     
-        Public properties:
-        data  -- iterable data
-        N     -- a number of items in data
-        
-        Public methods:
-        read_from_file(self, input_file)
-        read_online(self, input_file) ~> item
-        read_from_db(self, db_cursor) [ABSTRACT]
-        write_to_file(self, output_file)
-        write_to_db(self, db_cursor) [ABSTRACT]
-        read_as_iter(self, source)
-        iterate(self) ~> item of data 
-        do(self, cf, **args) -> result
-        process(self, cf, **args)
-        clear(self)
-        do_with_iter(self, cf, **args) -> [result,]
-        process_with_iter(self, cf, **args)
+    Public properties:
+    
+    - data, iterable data
+    - N, a number of items in data
+    
+    Public methods:
+    
+    - read_from_file(self, input_file)
+    - read_online(self, input_file) ~> item
+    - read_from_db(self, db_cursor) [ABSTRACT]
+    - write_to_file(self, output_file)
+    - write_to_db(self, db_cursor) [ABSTRACT]
+    - read_as_iter(self, source)
+    - iterate(self) ~> item of data 
+    - do(self, cf, **args) -> result
+    - process(self, cf, **args)
+    - clear(self)
+    - do_with_iter(self, cf, **args) -> [result,]
+    - process_with_iter(self, cf, **args)
     """
 
     def __init__(self):
@@ -127,7 +131,6 @@ class AbstractFileIO(object):
 
     def process(self, cf, **args):
         """ Process data with given core function."""
-
         self._data = cf(self._data, **args)
 
     def clear(self):
@@ -159,15 +162,19 @@ class AbstractFileIO(object):
 class AbstractFolderIO(object):
     """ Abstract class for working with abstract data in folder.
     
-        Public methods:
-        __init__(self, folder, mask=None)
-        iter_files(self)
-        get_files(self)
-        iter_filenames(self)
-        get_filenames(self)
-        iter_file_content(self)
-        copy_files_by_mask(self, dist_folder)
-        
+    Public methods:
+    
+    - __init__(self, folder, mask=None)
+    - iter_files(self)
+    - get_files(self)
+    - iter_filenames(self)
+    - get_filenames(self)
+    - iter_file_content(self)
+    - copy_files_by_mask(self, dist_folder)
+    
+    >>> folder_reader = AbstractFolderIO(folder, mask=".")
+
+
     """
 
     def __init__(self, folder, mask="."):
@@ -208,6 +215,14 @@ class AbstractFolderIO(object):
                     result.append(path)
         return result
 
+    def iter_path_names(self):
+        """ iter over files in folder. Return file name and path."""
+        for root, dirs, files in os.walk(self.folder, topdown=False):
+            for name in files:
+                if re.search(self.mask, name):
+                    apath = os.path.join(root, name)
+                    yield name, apath
+
     def iter_file_content(self):
         """ iter over files in folder. Return file content."""
         for root, dirs, files in os.walk(self.folder, topdown=False):
@@ -235,11 +250,17 @@ class AbstractFolderIO(object):
                 #TODO: fix me
             os.rename(file_path, dist_file)
 
+    def copy_files_by_mask(self, dist_folder):
+        for file_path in self.iter_filenames():
+            dist_file = os.path.join(dist_folder, os.path.split(file_path)[-1])
+            print "Copy: ", file_path, dist_file
+            if os.path.isfile(dist_file):
+                os.remove(dist_file)
+            shutil.copy2(file_path, dist_file)
+
 class AbstractFoldersIO(AbstractFileIO):
     """ Abstract class for working with abstract data in folder of folders."""
     pass
-
-
 
 def sc_iter_filepath_folder(folder, mask="."):
     """ Shortcut for iterating file path in given folder."""
@@ -253,6 +274,12 @@ def sc_iter_filename_folder(folder, mask="."):
     for filename in reader.iter_files():
         yield filename
 
+def sc_iter_path_name_folder(folder, mask="."):
+    """ Shortcut for iterating (filename, path) in given folder."""
+    reader = AbstractFolderIO(folder, mask=mask)
+    for filename, path in reader.iter_path_names():
+        yield filename, path
+
 def sc_iter_filedata_folder(folder, mask="."):
     """ Shortcut for iterating file content in given folder."""
     reader = AbstractFolderIO(folder, mask=mask)
@@ -264,35 +291,37 @@ def sc_move_files(folder, dist_folder, mask="."):
     reader = AbstractFolderIO(folder, mask=mask)
     reader.move_files_by_mask(dist_folder)
 
-def sc_process_file(file_name, cf, args_dict, join=False):
-    """ Shortcut for processing each file in folder
+def sc_process_file(file_name, cf, args_dict):
+    """ Shortcut for processing file
         with given cf funciton."""
     reader = AbstractFileIO()
     reader.read(file_name)
-    if join:
-        reader.join()
-    for text, name, file in reader.iter_file_content_and_names():
-        args_dict["name"] = name
-        text = cf(text, **args_dict)
-        with open(file, "w") as fh:
-            fh.write(text)
+    args_dict["name"] = name
+    text = cf(text, **args_dict)
+    with open(file_name, "w") as fh:
+        fh.write(text)
 
 def sc_process_folder(folder, cf, args_dict, mask="."):
     """ Shortcut for processing each file in folder
         with given cf funciton."""
     reader = AbstractFolderIO(folder, mask=mask)
-    for text, name, file in reader.iter_file_content_and_names():
+    for text, name, file_name in reader.iter_file_content_and_names():
         args_dict["name"] = name
         text = cf(text, **args_dict)
-        with open(file, "w") as fh:
+        with open(file_name, "w") as fh:
             fh.write(text)
 
-def sc_process_folder_to_other(folder, output_folder, cf, args_dict, mask="."):
+def sc_process_folder_to_other(folder, output_folder, cf, args_dict, mask=".", verbose=False):
     """ Shortcut for processing each file in folder
-        with given cf funciton."""
+        with given cf funciton.
+
+        To print names set *verbose* to True.
+    """
     assert hasattr(cf, "__call__")
     reader = AbstractFolderIO(folder, mask=mask)
     for text, name, file in reader.iter_file_content_and_names():
+        if verbose:
+            print file
         args_dict["name"] = name
         text = cf(text, **args_dict)
         output_file = os.path.join(output_folder,
