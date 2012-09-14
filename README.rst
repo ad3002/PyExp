@@ -21,8 +21,8 @@ Timer
 
 Usage:
 
-with Timer(name="Step name"):
-	...
+	with Timer(name="Step name"):
+		...
 
 Класс описывающий шаг
 ---------------------
@@ -38,22 +38,22 @@ with Timer(name="Step name"):
 
 Инициация шага:
 
-step = AbstractStep("step_name", None, cf, save_output=False, check_f=check_f, check_p="previous_step")
+	step = AbstractStep("step_name", None, cf, save_output=False, check_f=check_f, check_p="previous_step")
 
-print step
->>> step_name
+	print step
+	>>> step_name
 
-print step.get_as_dict().keys()
->>> ['name', 'cf', 'check', 'pre', 'save_output']
+	print step.get_as_dict().keys()
+	>>> ['name', 'cf', 'check', 'pre', 'save_output']
 
 Настройки эксперимента
 ----------------------
 
 Инициация настроек эксперимента:
 
-settings = AbstractExperimentSettings()
-settings.as_dict().keys()
->>> ['files', 'folders', 'other', 'config']
+	settings = AbstractExperimentSettings()
+	settings.as_dict().keys()
+	>>> ['files', 'folders', 'other', 'config']
 
 Для создания субкласса настроек нужно добавить словари files, folders, other.
 
@@ -73,8 +73,8 @@ settings.as_dict().keys()
 
 Инициация эксперимента:
 
-project, settings = manager.get_project(pid)
-exp = AbstractExperiment(settings, project, name=None, force=False, logger=None, manager=None)
+	project, settings = manager.get_project(pid)
+	exp = AbstractExperiment(settings, project, name=None, force=False, logger=None, manager=None)
 
 Параметры иннициации:
 
@@ -131,8 +131,8 @@ These functions must be rewritted in subclasses.
 
 Суть менеджера в управление настройками проектов, которые хранятся как yaml файлы.
 
-settings_class = AbstractExperimentSettings
-manager = ProjectManager(settings_class) 
+	settings_class = AbstractExperimentSettings
+	manager = ProjectManager(settings_class) 
 
 Для инициации менеджер берет аргументом класс настроек эксперимента. При инициации менеджер пытается прочитать в родительской директории os specific yaml файл с настройками:
 
@@ -142,19 +142,19 @@ manager = ProjectManager(settings_class)
 
 Содержимое этого фала сохраняется в self.config. Если не удается прочитать файл, то создаются значения по умполчанию для self.congig:
 
-self.config = {
-                'path_work_folder': 'data',
-                'path_workspace_folder': '../..',
-                'projects_folder': 'projects',
-            }
+	self.config = {
+	                'path_work_folder': 'data',
+	                'path_workspace_folder': '../..',
+	                'projects_folder': 'projects',
+	            }
 
 После этого используя значения self.config, выставляются self.projects_folder (директория с yaml файлами проектов), self.work_folder (директория с данными проектов) и self.settings_class.config = self.config. Если директории отсутствуют, то они создаются.
 
-Добавление проекта.
+Добавление проекта:
 
-pid = "name"
-projecy_data = {'path_to': 'path'}
-manager.add_proejct(pid, project_data, init=True, force=False)
+	pid = "name"
+	projecy_data = {'path_to': 'path'}
+	manager.add_proejct(pid, project_data, init=True, force=False)
 
 Если force, то yaml файл проекта будет удален. Если не force и yaml файл был создан ранее, то вылетит исключение.
 После этого происходит вызов self._init_project(...), который может быть переписан в субклассах для инитиации данных переданных с project_data.
@@ -162,21 +162,21 @@ manager.add_proejct(pid, project_data, init=True, force=False)
 
 Получение проекта.
 
-project, settings = manager.get_project(pid)
+	project, settings = manager.get_project(pid)
 
 Project dictionary contains data from project's yaml file. Settings dictionary содержит данные из settings class с поправленными путями according to work_folder path and path_to path.
 
 Получение списка путей к yaml файлам всех проктов:
 
-project_files = manager.get_all_projects()
+	project_files = manager.get_all_projects()
 
 Project removing:
 
-manager.remove_project(pid)
+	manager.remove_project(pid)
 
 Projecy saving
 
-manager.save(pid, project_data)
+	manager.save(pid, project_data)
 
 Модель для хранение данных
 --------------------------
@@ -195,13 +195,13 @@ manager.save(pid, project_data)
 
 Создание объекта:
 
-model = AbstractModel()
-model.set_with_dict(data_dict)
-model.set_with_list(data_list)
+	model = AbstractModel()
+	model.set_with_dict(data_dict)
+	model.set_with_list(data_list)
 
 Модель можно получить как словарь:
 
-model_dict = model.get_as_dict()
+	model_dict = model.get_as_dict()
 
 Облегчение чтения данных
 ------------------------
@@ -246,7 +246,7 @@ Avalibale methods:
 Работа с директорией
 ~~~~~~~~~~~~~~~~~~~~
 
-reader = AbstractFolderIO(folder, mask=".")
+	reader = AbstractFolderIO(folder, mask=".")
 
 - iter_files(), yield file name
 - get_files(), return list of file names 
