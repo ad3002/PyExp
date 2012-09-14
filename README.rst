@@ -21,6 +21,8 @@ Timer
 
 Usage:
 
+::
+
 	with Timer(name="Step name"):
 		...
 
@@ -38,6 +40,8 @@ Usage:
 
 Инициация шага:
 
+::
+
 	step = AbstractStep("step_name", None, cf, save_output=False, check_f=check_f, check_p="previous_step")
 
 	print step
@@ -50,6 +54,8 @@ Usage:
 ----------------------
 
 Инициация настроек эксперимента:
+
+::
 
 	settings = AbstractExperimentSettings()
 	settings.as_dict().keys()
@@ -72,6 +78,8 @@ Usage:
 - manager
 
 Инициация эксперимента:
+
+::
 
 	project, settings = manager.get_project(pid)
 	exp = AbstractExperiment(settings, project, name=None, force=False, logger=None, manager=None)
@@ -131,6 +139,8 @@ These functions must be rewritted in subclasses.
 
 Суть менеджера в управление настройками проектов, которые хранятся как yaml файлы.
 
+::
+
 	settings_class = AbstractExperimentSettings
 	manager = ProjectManager(settings_class) 
 
@@ -142,6 +152,8 @@ These functions must be rewritted in subclasses.
 
 Содержимое этого фала сохраняется в self.config. Если не удается прочитать файл, то создаются значения по умполчанию для self.congig:
 
+::
+
 	self.config = {
 	                'path_work_folder': 'data',
 	                'path_workspace_folder': '../..',
@@ -151,6 +163,8 @@ These functions must be rewritted in subclasses.
 После этого используя значения self.config, выставляются self.projects_folder (директория с yaml файлами проектов), self.work_folder (директория с данными проектов) и self.settings_class.config = self.config. Если директории отсутствуют, то они создаются.
 
 Добавление проекта:
+
+::
 
 	pid = "name"
 	projecy_data = {'path_to': 'path'}
@@ -162,19 +176,27 @@ These functions must be rewritted in subclasses.
 
 Получение проекта.
 
+::
+
 	project, settings = manager.get_project(pid)
 
 Project dictionary contains data from project's yaml file. Settings dictionary содержит данные из settings class с поправленными путями according to work_folder path and path_to path.
 
 Получение списка путей к yaml файлам всех проктов:
 
+::
+
 	project_files = manager.get_all_projects()
 
 Project removing:
 
+::
+
 	manager.remove_project(pid)
 
 Projecy saving
+
+::
 
 	manager.save(pid, project_data)
 
@@ -195,11 +217,15 @@ Projecy saving
 
 Создание объекта:
 
+::
+
 	model = AbstractModel()
 	model.set_with_dict(data_dict)
 	model.set_with_list(data_list)
 
 Модель можно получить как словарь:
+
+::
 
 	model_dict = model.get_as_dict()
 
@@ -245,6 +271,8 @@ Avalibale methods:
 
 Работа с директорией
 ~~~~~~~~~~~~~~~~~~~~
+
+::
 
 	reader = AbstractFolderIO(folder, mask=".")
 
