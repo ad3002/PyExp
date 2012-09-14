@@ -1,4 +1,4 @@
-PYExp: a tiny Python framework for experiment execution
+PyExp: a tiny Python framework for experiment execution
 =======================================================
 
 Фреймоворк состоит из четырех частей:
