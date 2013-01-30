@@ -1,5 +1,4 @@
-PyExp: a tiny Python framework for experiment execution
-=======================================================
+# PyExp: a tiny Python framework for experiment execution
 
 Фреймоворк состоит из четырех частей:
 
@@ -13,34 +12,28 @@ PyExp: a tiny Python framework for experiment execution
 - данные общие для всех проектов, которые будут выполнены в этом эксперименте. Это названия файлов и директорий. 
 - данные собственно проекта
 
-Timer
------
+## Timer
 
 При старте таймера, он печатате "Started: [step_name]...".
 При окончание шага, он печатает "Finished: [step_name] elepase: [time]".
 
 Usage:
 
-::
-
 	with Timer(name="Step name"):
-		...
+		compute_smth(data)
 
-Класс описывающий шаг
----------------------
+## Класс описывающий шаг
 
 Каждый шаг имеет следующие параметры:
 
-- name, step name
-- data, дополнительные данные для передаче в исполняющую функцию.
-- cf, исполняющая функция
-- save_output flag
-- check_f, функция, проверяющая статус этого шага после его выполнения
-- check_p, имя шага, который должен быть выполнен (иметь статус OK), на момент выполнения этого шага
+- **name**, step name
+- **data**, дополнительные данные для передаче в исполняющую функцию.
+- **cf**, исполняющая функция
+- **save_output** flag, default False
+- **check_f**, функция, проверяющая статус этого шага после его выполнения, default False
+- **check_p**, имя шага, который должен быть выполнен (иметь статус OK), на момент выполнения этого шага, default None
 
 Инициация шага:
-
-::
 
 	step = AbstractStep("step_name", None, cf, save_output=False, check_f=check_f, check_p="previous_step")
 
