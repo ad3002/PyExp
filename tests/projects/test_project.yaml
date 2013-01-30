@@ -2,3 +2,4 @@ data: data
 foo: bar
 path_to: data/test_data
 pid: test_project
+status: {}

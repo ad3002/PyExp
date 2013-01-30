@@ -43,7 +43,7 @@ class Timer(object):
         delta = time.time() - self.timer_start
         print ' elapsed: %s' % delta
 
-class AbstractStep(object):
+class AbstractStep(dict):
     ''' Abstract step for exepriment is described by step name, input value,
     and core function.
 
@@ -51,7 +51,6 @@ class AbstractStep(object):
     >>> cf = sum
     >>> input = [1,2,3]
     >>> step = AbstractStep(name, data, cf, use_env=False)
-
     '''
 
     def __init__(self, name, data, cf, save_output=False, check_f=None, check_p=None):
@@ -68,7 +67,6 @@ class AbstractStep(object):
             assert hasattr(self.check_f, "__call__")
         if self.check_p:
             assert isinstance(self.check_p, str)
-        
 
     def __str__(self):
         return self.name
@@ -83,7 +81,8 @@ class AbstractStep(object):
         }
 
 class AbstractExperimentSettings(object):
-
+    ''' Container for experimant settings.
+    '''
     config = {}
 
     def __init__(self):
@@ -100,23 +99,10 @@ class AbstractExperimentSettings(object):
 
 class AbstractExperiment(object):
     """ Class for an abstract experiment.
-    
     An experiment is a sequence of steps (AbstractStep).
-    
-    Public properties:
-
-    - settings is a dictionary of values used by steps.
-    
-    Public methods:
-    
-    - add_step(self, step)
-    - get_all_steps(self) -> list of step objects
-    - get_step(self, sid) -> step object
-    - remove_step(self, sid)
-    - change_step(self, sid, new_step)
-    - execute(self, start_sid=0, end_sid=None)
-    - clear_env(self)
     """
+
+    ### Initialization section ###
 
     def __init__(self, settings, project, name=None, logger=None, force=False, manager=None):
         """ Init class """
@@ -143,6 +129,8 @@ class AbstractExperiment(object):
         ''' Add avaliable steps.'''
         raise NotImplemented
 
+    ### Steps management section ###
+
     def add_step(self, step):
         """ Add a step to workflow."""
         assert step.__class__ == AbstractStep
@@ -153,6 +141,10 @@ class AbstractExperiment(object):
     def get_all_steps(self):
         """ Get list of steps."""
         return [self.sid2step[i] for i in xrange(0, self.sp) if self.sid2step[i]]
+
+    def get_avaliable_steps(self):
+        ''' Return registered steps.'''
+        return self.all_steps
 
     def print_steps(self):
         ''' Print sequence of added steps.'''
@@ -190,26 +182,37 @@ class AbstractExperiment(object):
         new_step.sid = sid
         self.sid2step[sid] = new_step
 
+    def get_as_dict(self):
+        """ Dictionary representation of experiment."""
+        return {
+            'name': self.name,
+            'steps': [ x.get_as_dict() for x in self.get_all_steps()], 
+        }
+
+    ### Execution section ###
+
     def execute(self, start_sid=0, end_sid=None):
         """ Execute sequence of steps."""
         steps = self.get_all_steps()
         for step in steps[start_sid:end_sid]:
             # refresh project
-            self.project, settings_ = self.manager.get_project(self.project["pid"])
+            self.project, _settings = self.manager.get_project(self.project["pid"])
             if not "status" in self.project:
                 self.project["status"] = {}
+            if not step.name in self.project["status"]:
+                self.project["status"][step.name] = None
             # check prerequisites
             if not self.force:
-                if "status" in self.project and step.check_p:
-                    if step.check_p in self.project["status"]:
-                        status_p = self.project["status"][step.check_p]
-                        if status_p not in ["OK", "PS"]:
-                            print "Previous step %s's status is %s" % (step.check_p, status_p)
-                            continue
-            # skip finished
-            if not self.force:
-                if step.name in self.project["status"]:
-                    if self.project["status"][step.name] == "OK":
+                # check prerequsites
+                if step.check_p:
+                    if not step.check_p in self.project["status"]:
+                        self.project["status"] = None
+                    status_p = self.project["status"][step.check_p]
+                    if status_p != "OK":
+                        print "Previous step %s's status is %s" % (step.check_p, status_p)
+                        continue
+                # skip finished
+                if self.project["status"][step.name] == "OK":
                         print "Skipped completed step: %s" % step.name
                         continue
             if self.logger:
@@ -236,31 +239,30 @@ class AbstractExperiment(object):
                     else:
                         self.settings[step.name] = result
             # post verification
-            self.check_step(step.get_as_dict())
-        # send to server
-        self.logger_update_project(self.project["pid"],
-                        self.project)
-    
-    def check_step(self, step):
-        if not "check" in step:
-            print "Verification for step %s is absent" % step["name"]
-            return None
-        if not step["name"] in self.project["status"]:
-            self.project["status"][step["name"]] = None
-        if step["check"]:
-            if not hasattr(step["check"], "__call__"):
-                print "Uncallable function for step %s" % step["name"]
-                return None
-            if self.force:
-                if self.project["status"][ step["name"]] == "OK":
-                    return "OK"
-            result = step["check"](self.settings, self.project)
-            if not result:
-                print "Result for step %s is None" % step["name"]
-                result = "None"
+            self.check_step(step)
             # send to server
-            self.project["status"][step["name"]] = result
-            self.logger_update_status(self.project["pid"],  step["name"], result)
+            self.logger_update_project(self.project["pid"],
+                            self.project)
+    
+    ### Steps checking section ### 
+
+    def check_step(self, step):
+        if step.check_f is None:
+            print "Verification for step %s is absent" % step.name
+            return None
+        if not step.name in self.project["status"]:
+            self.project["status"][step.name] = None
+        if step.check_f:
+            if not hasattr(step.check_f, "__call__"):
+                print "Uncallable function for step %s" % step.name
+                return None
+            result = step.check_f(self.settings, self.project)
+            if result is None:
+                print "Result for step %s is None" % step.name
+                result =None
+            # send to server
+            self.project["status"][step.name] = result
+            self.logger_update_status(self.project["pid"],  step.name, result)
             return result
         return None
 
@@ -280,6 +282,8 @@ class AbstractExperiment(object):
         self.logger_update_project(self.project["pid"],
                         self.project)
 
+    ### Methods related to settings ###
+
     def clear_settings(self):
         """ Clear settings."""
         self.settings = None
@@ -288,20 +292,28 @@ class AbstractExperiment(object):
         """ Get settings."""
         return self.settings
 
-    def get_as_dict(self):
-        """ Dictionary representation of experiment."""
-        return {
-            'name': self.name,
-            'steps': [ x.get_as_dict() for x in self.get_all_steps()], 
-        }
+    def remove_project_data(self):
+        """ Remove all project data.
+        """
+        for file_name in self.settings["files"]:
+            print "Removing file %s ..." % file_name
+            try:
+                os.unlink(file_name)
+            except:
+                print "Can't remove %s" % file_name
+        for folder_name in self.settings['folders']:
+            print "Removing folder %s ..." % folder_name
+            for root, dirs, files in os.walk(folder_name, topdown=False):
+                for name in files:
+                    os.remove(os.path.join(root, name))
+                for name in dirs:
+                    os.rmdir(os.path.join(root, name))
 
-    def get_avaliable_steps(self):
-        ''' Return registered steps.'''
-        return self.all_steps
-
+    ### Methods related to project status update ###
 
     def logger_update_status(self, pid, step_name, status):
         if not "config" in self.settings or not "url_status_update" in self.settings["config"]:
+            print "To submit data to server set url_status_update in config file."
             return
         url = self.settings["config"]["url_status_update"]
         data = {
@@ -309,34 +321,38 @@ class AbstractExperiment(object):
             'step_name': step_name,
             'status':status,
         }
-        try:
-            data = urllib.urlencode(data)
-            resp = urllib.urlopen(url, data).read()
-            print pid, step_name, status, resp
-        except Exception, e:
-            print e
-            time.sleep(3)
-            data = urllib.urlencode(data)
-            resp = urllib.urlopen(url, data).read()
-            print pid, step_name, status, resp
+        attempts = 0
+        data = urllib.urlencode(data)
+        while attempts < 3:
+            try:
+                resp = urllib.urlopen(url, data).read()
+                print pid, step_name, status, resp
+            except Exception, e:
+                print e
+                time.sleep(3)
+                attempts += 1
 
     def logger_update_project(self, pid, project):
         if self.manager:
             self.manager.save(pid, project)
         if not "config" in self.settings or not "url_project_update" in self.settings["config"]:
+            print "To submit data to server set url_project_update in config file."
             return
         url = self.settings["config"]["url_project_update"]
         project = simplejson.dumps(project)
         data = {
             'project': project,
         }
+        attempts = 0
         data = urllib.urlencode(data)
-        try:
-            resp = urllib.urlopen(url, data).read()
-        except:
-            resp = "Server error"
-            print "Submit error..."
-        print pid, resp
+        while attempts < 3:
+            try:
+                resp = urllib.urlopen(url, data).read()
+                print pid, resp
+            except Exception, e:
+                print e
+                time.sleep(3)
+                attempts += 1
 
     def check_and_upload_project(self):
         if not "status" in self.project:
@@ -348,4 +364,3 @@ class AbstractExperiment(object):
                 self.check_step(step)
         self.logger_update_project(self.project["pid"],
                         self.project)
-

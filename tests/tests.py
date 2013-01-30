@@ -48,7 +48,7 @@ class TestExperiment(AbstractExperiment):
         self.all_steps = STEPS
 
 class TestExperimentSettings(AbstractExperimentSettings):
-    def __init__(self   ):
+    def __init__(self ):
         self.folders = {
             "test_folder":"test/folder",
         }
@@ -203,7 +203,6 @@ class AbstractExperimentTest(unittest.TestCase):
         self.assertEqual(exp.get_settings(), settings)
         exp.clear_settings()
         self.assertEqual(exp.settings, None)
-
 
     def test_logger(self):
         pass
