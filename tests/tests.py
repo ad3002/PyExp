@@ -1,5 +1,6 @@
 import sys, os
 sys.path.append("/Users/ad3002/Dropbox/workspace")
+sys.path.append("c:/Users/Master/Dropbox/workspace")
 
 import unittest
 from PyExp.experiments.abstract_experiment import AbstractStep
@@ -76,6 +77,7 @@ class ProjectManagerTest(unittest.TestCase):
             "data":"data",
             "foo":"bar",
             "path_to": "data/test_data",
+            "pid": "test_project",
         }
         experiment_settings = TestExperimentSettings()
         manager = ProjectManager(experiment_settings)
@@ -92,6 +94,7 @@ class ProjectManagerTest(unittest.TestCase):
             "data":"data",
             "foo":"bar",
             "path_to": "data/test_data",
+            "pid": "test_project",
         }
         manager.add_project(pid, data, init=True, force=True)
         self.assertEqual(manager.get_all_projects(), ['test_project.yaml'])
@@ -102,13 +105,14 @@ class ProjectManagerTest(unittest.TestCase):
             "data":"data",
             "foo":"bar",
             "path_to": "data/test_data",
+            "pid": "test_project",
         }
         experiment_settings = TestExperimentSettings()
         manager = ProjectManager(experiment_settings)
         project, settings = manager.get_project(pid)
-        self.assertEqual(settings["full_path_to"], "data/data/test_data")
-        self.assertEqual(settings["files"]["test_file"], "data/data/test_data/test.txt")
-            
+        self.assertEqual(settings["full_path_to"].count("data"), 3)
+        self.assertEqual(settings["files"]["test_file"].count("data"), 3)
+        self.assertEqual(settings["files"]["test_file"].count("test.txt"), 1)
 
 class AbstractStepTest(unittest.TestCase):
     
@@ -128,8 +132,8 @@ class AbstractStepTest(unittest.TestCase):
         dict_repr = {
             'name':name,
             'cf':cf,
-            'check_f':None,
-            'check_p':None,
+            'pre':None,
+            'check':None,
             'save_output':False,
         }
         self.assertEqual(step.get_as_dict(), dict_repr)
@@ -141,12 +145,11 @@ class AbstractStepTest(unittest.TestCase):
         dict_repr = {
             'name':name,
             'cf':cf,
-            'check_f':f,
-            'check_p':"step0",
+            'check':f,
+            'pre':"step0",
             'save_output':True,
         }
         self.assertEqual(step.get_as_dict(), dict_repr)
-
 
 class AbstractExperimentSettingsTest(unittest.TestCase):
     
@@ -180,18 +183,20 @@ class AbstractExperimentTest(unittest.TestCase):
         pass
 
     def test_initiation(self):
-        settings = AbstractExperimentSettings()
-        project = {"pid":"pid"}
+        project = {"pid":"test_project"}
+        pid = "test_project"
+        manager = ProjectManager(TestExperimentSettings())
+        project, settings = manager.get_project(pid)
         exp = TestExperiment(settings, project)
         self.assertEqual(exp.name, "default")
         exp = TestExperiment(settings, project, name="name")
         self.assertEqual(exp.name, "name")
         self.assertEqual(exp.logger, None)
-        self.assertEqual(exp.force, True)
+        self.assertEqual(exp.force, False)
         self.assertEqual(exp.settings, settings)
         self.assertEqual(exp.project, project)
         self.assertEqual(exp.sp, 0)
-        self.assertEqual(exp.pid, "pid")
+        self.assertEqual(exp.pid, "test_project")
         self.assertEqual(exp.sid2step, {})
         self.assertEqual(exp.manager, None)
         self.assertEqual(exp.all_steps, STEPS)
@@ -207,8 +212,10 @@ class AbstractExperimentTest(unittest.TestCase):
         pass
 
     def test_step_adding(self):
-        settings = AbstractExperimentSettings()
-        project = {"pid":"pid"}
+        project = {"pid":"test_project"}
+        pid = "test_project"
+        manager = ProjectManager(TestExperimentSettings())
+        project, settings = manager.get_project(pid)
         exp = TestExperiment(settings, project, name="name")
         for i, step in enumerate(exp.get_avaliable_steps()):
             s = AbstractStep(step["name"], 
@@ -232,8 +239,10 @@ class AbstractExperimentTest(unittest.TestCase):
 
 
     def test_avalibale_steps(self):
-        settings = AbstractExperimentSettings()
-        project = {"pid":"pid"}
+        project = {"pid":"test_project"}
+        pid = "test_project"
+        manager = ProjectManager(TestExperimentSettings())
+        project, settings = manager.get_project(pid)
         exp = TestExperiment(settings, project, name="name")
         step = exp.find_step("step_a")
         self.assertEqual(step, {
@@ -252,7 +261,6 @@ class AbstractExperimentTest(unittest.TestCase):
     def test_execution(self):
         pass
 
-
-        
+      
 if __name__ == '__main__':
     unittest.main()
