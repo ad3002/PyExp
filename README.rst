@@ -30,7 +30,7 @@ Usage:
 - **data**, дополнительные данные для передаче в исполняющую функцию.
 - **cf**, исполняющая функция
 - **save_output** flag, default False
-- **check_f**, функция, проверяющая статус этого шага после его выполнения, default False
+- **check_f**, функция, проверяющая статус этого шага после его выполнения, default None
 - **check_p**, имя шага, который должен быть выполнен (иметь статус OK), на момент выполнения этого шага, default None
 
 Инициация шага:
@@ -43,12 +43,9 @@ Usage:
 	print step.get_as_dict().keys()
 	>>> ['name', 'cf', 'check', 'pre', 'save_output']
 
-Настройки эксперимента
-----------------------
+## Настройки эксперимента
 
 Инициация настроек эксперимента:
-
-::
 
 	settings = AbstractExperimentSettings()
 	settings.as_dict().keys()
@@ -56,79 +53,97 @@ Usage:
 
 Для создания субкласса настроек нужно добавить словари files, folders, other.
 
-Класс эксперимента
-------------------
+## Класс эксперимента
 
-Аттрибуты эксеримента:
+### Аттрибуты эксеримента:
 
-- name
-- logger
-- settings
-- project
-- force
-- sp
-- pid
-- manager
+- **settings**, settings object
+- **project**, project object
+- **name**, experiment name, default None
+- **logger**, function for logging, default None
+- **force**, skip prerequisite checking for steps, default False
+- **manager**, project manager object, default None
+- **sp**, number of added steps
+- **pid**, current project pid
+- **all_steps**, steps dictionary
+- **sid2step**, sid to step dictionary
 
-Инициация эксперимента:
-
-::
+### Инициация эксперимента:
 
 	project, settings = manager.get_project(pid)
 	exp = AbstractExperiment(settings, project, name=None, force=False, logger=None, manager=None)
 
-Параметры иннициации:
+### Параметры инициации:
 
-- name, имя эксперимента ('default')
-- force, выполнять ли шаг если даже он уже выполнен
-- logger, функция логгирования func(pid, exp_name, step_sid, step_name, status)
-- manager, менеджер проектов
+- **settings**, settings object
+- **project**, project object
+- **name**, experiment name, default is 'default'
+- **logger**, function for logging, default None
+- **force**, skip prerequisite checking for steps, default False
+- **manager**, project manager object, default None
 
 В процессе создания вызывается метод init_steps(self). Для инициации доступных шагов в субклассе должен быть создан метод init_steps(self). 
 
-Avaliable methods:
+### Logger function example:
 
-- exp.add_step(step), добавленному шагу присваивается sid (step id)
-- exp.get_all_steps(), returns list of step objs
-- exp.get_avaliable_steps(), returns self.all_steps
+	logger_func(pid, exp_name, step_sid, step_name, status)
+
+### Avaliable methods related to steps management:
+
+- exp.add_step(step), добавленному шагу присваивается sid (step_id)
+- exp.get_all_steps(), returns list of step objects
+- exp.get_avaliable_steps(), returns registered steps
 - exp.print_steps(), prints "Step [sid]: [string representation of step]" for each step
 - exp.get_step(sid), returns step or None
 - exp.find_step(step_name), returns step dict or None
 - exp.find_steps_by_stage(stege), returns steps dict or None
 - exp.remove_step(sid)
 - exp.change_step(sid, new_step)
-- exp.checl_step(step), returns None or result of checking. If force flag is False then if status OK real check is skipped
-- exp.check_avalibale_steps(), check all  avaliable steps with exp.check_step(step) and upfate project
-- exp.reset_avaliable_steps(), set all step's statuses to None
-- exp.clear_settings()
-- exp.get_settings()
 - exp.get_as_dict(), returns {'name':..., 'steps': [s.as_dict(),...]}
 
-Исполнение эксперимента
+### Avalibale methods related to experiment exectution:
 
-Выполяются последовательно все добавленные шаги. Порядок выполнения шага следующий: 
+- exp.execute(start_sid=0, end_sid=None), see next section
 
-- обновление данных проекта
-- проверка пререквезитов, если предыдущий шаг не выполнен, то это шаг пропускается
-- если стоит флаг force, то нет проверки на выполненность текущего шага, иначе проверяется статус текущего шага и если он равен OK то шаг пропускается
-- если передан logger то отправляется сообщение о начале выполнения шага
-- выполнение шага
-- если передан logger то отправляется сообщение о заверщение выполнения шага
-- если стоит флаг save_output, то результат шага сохраняется в словарь self.settings[step.name], или если результат словарь то в self.settings сохраняются пары ключ-значение.
-- происходит проверка статуса текущего шага с self.check_step(step_dict)
+## Порядок исполнение эксперимента:
 
-После заверщения всех шагов обновляются данные проекта.
+Выполяются последовательно все добавленные шаги.Порядок выполнения шага следующий: 
 
-Methods related to experiment logging and server data:
+1) обновление данных проекта из yaml file
+2) if project data lacks "status" dictionary then it will be added
+3) if status dictionary lacks step name then it will be added with None value
+3) проверка пререквезитов
+- если стоит флаг force, то нет проверки на выполненность текущего шага
+- if status dictionary lacks prerequiste step name then it will be added with None value
+- если предыдущий шаг не выполнен (status отличный от OK), то это шаг пропускается
+- проверяется статус текущего шага и если он равен OK то шаг пропускается
+4) если передан logger то отправляется сообщение о начале выполнения шага
+5) выполнение шага внутри Timer class
+6) если передан logger то отправляется сообщение о заверщение выполнения шага
+7) если стоит флаг save_output, то результат шага сохраняется в словарь self.settings[step.name], или если результат словарь то в self.settings сохраняются пары ключ-значение.
+8) происходит проверка статуса текущего шага с self.check_step(step)
+9) После этого обновляются данные проекта.
+
+### Methods related to step checking
+
+ - exp.check_step(step), returns None or result of checking.
+- exp.check_avalibale_steps(), check all  avaliable steps with exp.check_step(step) and update project
+- exp.reset_avaliable_steps(), set all step's statuses to None
+
+### Methods related to settings
+
+- exp.clear_settings()
+- exp.get_settings()
+- exp.remove_project_data
+
+### Methods related to experiment logging and server data:
 
 - exp.logger_update_status(pid, step_name, status), upload step status to self.settings["config"]["url_status_update"]
 - exp.logger_update_project(pid, project), save project data and upload project to self.settings"config"]["url_project_update"]
-- exp.upload_project(), check all steps and upload project
+- exp.check_and_upload_project(), check all steps and upload project
 
-These functions must be rewritted in subclasses.
+## Описание менеджера экспериментов
 
-Описание менеджера экспериментов
---------------------------------
 
 Суть менеджера в управление настройками проектов, которые хранятся как yaml файлы.
 
