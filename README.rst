@@ -203,13 +203,17 @@ Projecy saving
 Модель для хранение данных
 --------------------------
 
+::
+	
+	from PyExp.models.abstract_model import AbstractModel
+
 Класс содержит следующие аттрибуты:
 
 - dumpable_attributes, список всех аттрибутов
 - int_attributes, список тех из них, которые типа int
 - float_attributes, список тех из них, которые типа float
 - list_attributes, список тех из них, которые типа list
-- lint_attributes_types, словарь типов для аттрибутов из list_attributes
+- list_attributes_types, словарь типов для аттрибутов из list_attributes
 - other_attributes, словарь других аттрибутов
 
 При инициализации аттрибуты выставляются на None, 0 или 0.0.
@@ -267,6 +271,7 @@ Avalibale methods:
 - clear()
 - do_with_iter(cf, **args), ger list of results after cf(data[i], **args)
 - process_with_iter(cf, **args)
+- sort(sort_func, reverse=True)
 
 
 Работа с директорией
