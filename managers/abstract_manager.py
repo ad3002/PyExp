@@ -114,6 +114,7 @@ class ProjectManager(object):
         if self._check_pid(pid):
             raise ProjectManagerException("PID (%s) exists." % pid)
         project_data = self._init_project(project_data)
+        project_data["status"] = {}
         if init:
             self._init_data(project_data)
         self.save(pid, project_data)
