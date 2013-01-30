@@ -151,6 +151,11 @@ class AbstractFileIO(object):
         for i, item in enumerate(self._data):
             self._data[i] = cf(item, **args)
 
+    def sort(self, sort_func, reverse=False):
+        """ Sort data with sort_func and reversed param."""
+        assert hasattr(sort_func, "__call__")
+        self._data.sort(key=sort_func, reverse=reverse)
+
     @property
     def data(self):
         return self._data
