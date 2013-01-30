@@ -137,6 +137,7 @@ class AbstractExperiment(object):
         self.init_steps()
         self.manager = manager
         self.settings["manager"] = manager
+        self.settings["experiment"] = self
 
     def init_steps(self):
         ''' Add avaliable steps.'''
@@ -195,13 +196,16 @@ class AbstractExperiment(object):
         for step in steps[start_sid:end_sid]:
             # refresh project
             self.project, settings_ = self.manager.get_project(self.project["pid"])
+            if not "status" in self.project:
+                self.project["status"] = {}
             # check prerequisites
-            if "status" in self.project and step.check_p:
-                if step.check_p in self.project["status"]:
-                    status_p = self.project["status"][step.check_p]
-                    if status_p != "OK":
-                        print "Previous step %s's status is %s" % (step.check_p, status_p)
-                        continue
+            if not self.force:
+                if "status" in self.project and step.check_p:
+                    if step.check_p in self.project["status"]:
+                        status_p = self.project["status"][step.check_p]
+                        if status_p not in ["OK", "PS"]:
+                            print "Previous step %s's status is %s" % (step.check_p, status_p)
+                            continue
             # skip finished
             if not self.force:
                 if step.name in self.project["status"]:
@@ -241,6 +245,8 @@ class AbstractExperiment(object):
         if not "check" in step:
             print "Verification for step %s is absent" % step["name"]
             return None
+        if not step["name"] in self.project["status"]:
+            self.project["status"][step["name"]] = None
         if step["check"]:
             if not hasattr(step["check"], "__call__"):
                 print "Uncallable function for step %s" % step["name"]
@@ -325,7 +331,11 @@ class AbstractExperiment(object):
             'project': project,
         }
         data = urllib.urlencode(data)
-        resp = urllib.urlopen(url, data).read()
+        try:
+            resp = urllib.urlopen(url, data).read()
+        except:
+            resp = "Server error"
+            print "Submit error..."
         print pid, resp
 
     def check_and_upload_project(self):
