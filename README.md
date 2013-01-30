@@ -144,10 +144,7 @@ Usage:
 
 ## Описание менеджера экспериментов
 
-
 Суть менеджера в управление настройками проектов, которые хранятся как yaml файлы.
-
-::
 
 	settings_class = AbstractExperimentSettings
 	manager = ProjectManager(settings_class) 
@@ -160,8 +157,6 @@ Usage:
 
 Содержимое этого фала сохраняется в self.config. Если не удается прочитать файл, то создаются значения по умполчанию для self.congig:
 
-::
-
 	self.config = {
 	                'path_work_folder': 'data',
 	                'path_workspace_folder': '../..',
@@ -170,48 +165,35 @@ Usage:
 
 После этого используя значения self.config, выставляются self.projects_folder (директория с yaml файлами проектов), self.work_folder (директория с данными проектов) и self.settings_class.config = self.config. Если директории отсутствуют, то они создаются.
 
-Добавление проекта:
-
-::
+### Добавление проекта:
 
 	pid = "name"
 	projecy_data = {'path_to': 'path'}
-	manager.add_proejct(pid, project_data, init=True, force=False)
+	manager.add_proejct(pid, project_data, init=False, force=False)
 
 Если force, то yaml файл проекта будет удален. Если не force и yaml файл был создан ранее, то вылетит исключение.
 После этого происходит вызов self._init_project(...), который может быть переписан в субклассах для инитиации данных переданных с project_data.
 Если init, то дополнительно происходит вызов _init_data(...), в котором происходит создание всех директорий согласно данным work_folder, path_to и folder_path из settings_class.folders.
 
-Получение проекта.
-
-::
+### Получение проекта.
 
 	project, settings = manager.get_project(pid)
 
 Project dictionary contains data from project's yaml file. Settings dictionary содержит данные из settings class с поправленными путями according to work_folder path and path_to path.
 
-Получение списка путей к yaml файлам всех проктов:
-
-::
+### Получение списка путей к yaml файлам всех проктов:
 
 	project_files = manager.get_all_projects()
 
-Project removing:
-
-::
+### Project removing:
 
 	manager.remove_project(pid)
 
-Projecy saving
-
-::
+### Project saving
 
 	manager.save(pid, project_data)
 
-Модель для хранение данных
---------------------------
-
-::
+## Модель для хранение данных
 	
 	from PyExp.models.abstract_model import AbstractModel
 
@@ -227,9 +209,7 @@ Projecy saving
 При инициализации аттрибуты выставляются на None, 0 или 0.0.
 Строковая репрезентация объекта - это tab-delimited string of dumpable attributes with \n end-symbol. При этом дополнительно вызывается model.preprocess_data() для преобразование данных.
 
-Создание объекта:
-
-::
+### Создание объекта:
 
 	model = AbstractModel()
 	model.set_with_dict(data_dict)
@@ -237,12 +217,11 @@ Projecy saving
 
 Модель можно получить как словарь:
 
-::
-
 	model_dict = model.get_as_dict()
 
-Облегчение чтения данных
-------------------------
+Model has preprocess_data method for any data preprocessing until returning. It can be implemented in nested classes.
+
+## Облегчение чтения данных
 
 Состоит из трех классов:
 
@@ -250,8 +229,7 @@ Projecy saving
 - AbstractFolderIO()
 - AbstractFoldersIO()
 
-Работа с отдельным файлом
-~~~~~~~~~~~~~~~~~~~~~~~~~
+### Работа с отдельным файлом
 
 Avaliable attributes:
 
@@ -281,11 +259,7 @@ Avalibale methods:
 - process_with_iter(cf, **args)
 - sort(sort_func, reverse=True)
 
-
-Работа с директорией
-~~~~~~~~~~~~~~~~~~~~
-
-::
+### Работа с директорией
 
 	reader = AbstractFolderIO(folder, mask=".")
 
@@ -299,11 +273,9 @@ Avalibale methods:
 - move_files_by_mask(dist_folder)
 - copy_files_by_mask(dist_folder)
 
-Работа со вложенными директориями
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+### Работа со вложенными директориями
 
-Полезные shortcuts
-~~~~~~~~~~~~~~~~~~
+### Полезные shortcuts
 
 - sc_iter_filepath_folder(folder, mask="."), yield full path
 - sc_iter_filename_folder(folder, mask="."), yield file name
@@ -314,4 +286,3 @@ Avalibale methods:
 - sc_process_folder(folder, cf, args_dict, mask=".")
 - sc_process_folder_to_other(folder, output_folder, cf, args_dict, mask=".", verbose=False)
 - read_pickle_file(pickle_file), get data
-

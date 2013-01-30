@@ -23,38 +23,6 @@ class ProjectManager(object):
     Each project is yaml file with settings. 
     Project PID is a yaml file name.
     
-    Public properties:
-
-    - self.projects_folder = "data"
-    
-    Public methods:
-
-    - __init__(self, projects_folder="data")
-    - add_project(self, pid, project_data, init=False)
-    - get_project(self, pid) -> project data
-    - get_all_projects(self) -> projects list
-    - remove_project(self, pid)
-    - save(self, pid, project_data)
-    
-    Private methods:
-
-    _check_pid(self, pid) -> bool
-    _init_project(self, project_data) -> project data
-    _init_data(self, project)
-    
-    Exceptions:
-
-    - ProjectManagerException("PID (%s) doesn't exists." % pid)
-    - ProjectManagerException("PID (%s) exists." % pid) 
-
-    Usage:
-
-    >>> projects_folder = "data"
-    >>> manager = ProjectManager()
-    >>> pid = "test.text_project"
-    >>> project_data = {'n;':12}
-    >>> manager.add_project(pid, project_data, init=True)
-
     """
 
     def __init__(self, settings_class):
