@@ -43,7 +43,7 @@ class Timer(object):
         delta = time.time() - self.timer_start
         print ' elapsed: %s' % delta
 
-class AbstractStep(dict):
+class AbstractStep(object):
     ''' Abstract step for exepriment is described by step name, input value,
     and core function.
 

@@ -175,6 +175,10 @@ Usage:
 После этого происходит вызов self._init_project(...), который может быть переписан в субклассах для инитиации данных переданных с project_data.
 Если init, то дополнительно происходит вызов _init_data(...), в котором происходит создание всех директорий согласно данным work_folder, path_to и folder_path из settings_class.folders.
 
+Проверка новых параметров без удаления проекта:
+
+	manager.recheck_folders_and_params(pid, project_data)
+
 ### Получение проекта.
 
 	project, settings = manager.get_project(pid)

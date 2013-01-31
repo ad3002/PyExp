@@ -22,7 +22,7 @@ class ProjectManager(object):
     for some data transformation.
     Each project is yaml file with settings. 
     Project PID is a yaml file name.
-    
+
     """
 
     def __init__(self, settings_class):
@@ -87,6 +87,10 @@ class ProjectManager(object):
             self._init_data(project_data)
         self.save(pid, project_data)
 
+    def recheck_folders_and_params(self, pid, project_data):
+        self._init_data(project_data)
+        self.save(pid, project_data)
+
     def _init_project(self, project_data):
         """ Add initial data to project data dictionary."""
         return project_data
@@ -96,6 +100,7 @@ class ProjectManager(object):
         for folder_name, folder_path in self.settings_class.folders.items():
             folder = os.path.join(self.work_folder, project["path_to"], folder_path)
             if not os.path.isdir(folder):
+                print "Create folder %s ..." % folder
                 os.makedirs(folder)
 
     def _check_pid(self, pid):
