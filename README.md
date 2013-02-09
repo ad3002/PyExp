@@ -1,5 +1,25 @@
 # PyExp: a tiny Python framework for experiment execution
 
+## Contents
+
+- [Introduction](#_intro)
+- [Timer class](#_timer)
+- [Step class](#_step)
+- [Experiment settings class](#_exp_settings)
+- [Experiment class](#_exp)
+    - [Attributes](#_exp_attr)
+    - [Initiation](#_exp_init)
+    - [Initiation parameters](#_exp_init_params)
+    - [Logging](#_exp_logger)
+    - [Steps managment](#_exp_steps)
+    - [Execution](#_exp_exe)
+    - [Steps checking](#_exp_check)
+    - [Settings management](#_exp_settings)
+
+
+<a name="_intro"/>
+## Introduction
+
 Фреймоворк состоит из четырех частей:
 
 - класс для описания моделей
@@ -12,6 +32,7 @@
 - данные общие для всех проектов, которые будут выполнены в этом эксперименте. Это названия файлов и директорий. 
 - данные собственно проекта
 
+<a name="_timer"/>
 ## Timer
 
 При старте таймера, он печатате "Started: [step_name]...".
@@ -22,6 +43,7 @@ Usage:
 	with Timer(name="Step name"):
 		compute_smth(data)
 
+<a name="_step"/>
 ## Класс описывающий шаг
 
 Каждый шаг имеет следующие параметры:
@@ -43,6 +65,7 @@ Usage:
 	print step.get_as_dict().keys()
 	>>> ['name', 'cf', 'check', 'pre', 'save_output']
 
+<a name="_exp_settings"/>
 ## Настройки эксперимента
 
 Инициация настроек эксперимента:
@@ -53,8 +76,10 @@ Usage:
 
 Для создания субкласса настроек нужно добавить словари files, folders, other.
 
+<a name="_exp"/>
 ## Класс эксперимента
 
+<a name="_exp_attr"/>
 ### Аттрибуты эксеримента:
 
 - **settings**, settings object
@@ -68,11 +93,13 @@ Usage:
 - **all_steps**, steps dictionary
 - **sid2step**, sid to step dictionary
 
+<a name="_exp_init"/>
 ### Инициация эксперимента:
 
 	project, settings = manager.get_project(pid)
 	exp = AbstractExperiment(settings, project, name=None, force=False, logger=None, manager=None)
 
+<a name="_exp_init_params"/>
 ### Параметры инициации:
 
 - **settings**, settings object
@@ -84,10 +111,24 @@ Usage:
 
 В процессе создания вызывается метод init_steps(self). Для инициации доступных шагов в субклассе должен быть создан метод init_steps(self). 
 
+<a name="_exp_logger"/>
 ### Logger function example:
 
 	logger_func(pid, exp_name, step_sid, step_name, status)
 
+Upload step status to self.settings["config"]["url_status_update"]:
+
+	exp.logger_update_status(pid, step_name, status)
+	
+Save project data and upload project to self.settings"config"]["url_project_update"]:
+
+	exp.logger_update_project(pid, project)
+	
+Check all steps and upload project:
+
+	exp.check_and_upload_project()
+
+<a name="_exp_steps"/>
 ### Avaliable methods related to steps management:
 
 - exp.add_step(step), добавленному шагу присваивается sid (step_id)
@@ -101,11 +142,10 @@ Usage:
 - exp.change_step(sid, new_step)
 - exp.get_as_dict(), returns {'name':..., 'steps': [s.as_dict(),...]}
 
-### Avalibale methods related to experiment exectution:
-
-- exp.execute(start_sid=0, end_sid=None), see next section
-
+<a name="_exp_exe"/>
 ## Порядок исполнение эксперимента:
+
+	exp.execute(start_sid=0, end_sid=None)
 
 Выполяются последовательно все добавленные шаги.Порядок выполнения шага следующий: 
 
@@ -124,23 +164,31 @@ Usage:
 8) происходит проверка статуса текущего шага с self.check_step(step)
 9) После этого обновляются данные проекта.
 
+<a name="_exp_check"/>
 ### Methods related to step checking
 
- - exp.check_step(step), returns None or result of checking.
-- exp.check_avalibale_steps(), check all  avaliable steps with exp.check_step(step) and update project
-- exp.reset_avaliable_steps(), set all step's statuses to None
+Check step and returns None or result of checking.
 
+	exp.check_step(step)
+
+Check all  avaliable steps with exp.check_step(step) and update project.
+
+	exp.check_avalibale_steps()
+
+Set all step's statuses to None
+
+	exp.reset_avaliable_steps()
+
+Check added steps"
+
+	exp.check_steps()
+
+<a name="_exp_settings"/>
 ### Methods related to settings
 
 - exp.clear_settings()
 - exp.get_settings()
 - exp.remove_project_data
-
-### Methods related to experiment logging and server data:
-
-- exp.logger_update_status(pid, step_name, status), upload step status to self.settings["config"]["url_status_update"]
-- exp.logger_update_project(pid, project), save project data and upload project to self.settings"config"]["url_project_update"]
-- exp.check_and_upload_project(), check all steps and upload project
 
 ## Описание менеджера экспериментов
 
