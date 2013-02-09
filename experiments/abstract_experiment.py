@@ -124,6 +124,7 @@ class AbstractExperiment(object):
         self.manager = manager
         self.settings["manager"] = manager
         self.settings["experiment"] = self
+        self._skip_server_part = False
 
     def init_steps(self):
         ''' Add avaliable steps.'''
@@ -250,6 +251,8 @@ class AbstractExperiment(object):
         if step.check_f is None:
             print "Verification for step %s is absent" % step.name
             return None
+        if not "status" in self.project:
+            self.project["status"] = {}
         if not step.name in self.project["status"]:
             self.project["status"][step.name] = None
         if step.check_f:
@@ -267,9 +270,17 @@ class AbstractExperiment(object):
         return None
 
     def check_avalibale_steps(self):
+        ''' Check all avaliable steps.
+        '''
         steps = self.get_avaliable_steps()
         for step in steps:
-            print step["name"], self.check_step(step)
+            real_step = AbstractStep(step["name"], 
+                                     None, 
+                                     step["cf"], 
+                                     check_f=step["check"], 
+                                     check_p=step["pre"])
+            result = self.check_step(real_step)
+            print real_step.name, result
         # send to server
         self.logger_update_project(self.project["pid"],
                         self.project)
@@ -281,6 +292,16 @@ class AbstractExperiment(object):
         # send to server
         self.logger_update_project(self.project["pid"],
                         self.project)
+
+    def check_steps(self):
+        steps = self.get_all_steps()
+        for step in steps:
+            result = self.check_step(step)
+            print step.name, result
+        # send to server
+        self.logger_update_project(self.project["pid"],
+                        self.project)
+
 
     ### Methods related to settings ###
 
@@ -321,17 +342,8 @@ class AbstractExperiment(object):
             'step_name': step_name,
             'status':status,
         }
-        attempts = 0
-        data = urllib.urlencode(data)
-        while attempts < 3:
-            try:
-                resp = urllib.urlopen(url, data).read()
-                print pid, step_name, status, resp
-            except Exception, e:
-                print e
-                time.sleep(3)
-                attempts += 1
-
+        self._send_to_server(url, data)
+        
     def logger_update_project(self, pid, project):
         if self.manager:
             self.manager.save(pid, project)
@@ -343,16 +355,7 @@ class AbstractExperiment(object):
         data = {
             'project': project,
         }
-        attempts = 0
-        data = urllib.urlencode(data)
-        while attempts < 3:
-            try:
-                resp = urllib.urlopen(url, data).read()
-                print pid, resp
-            except Exception, e:
-                print e
-                time.sleep(3)
-                attempts += 1
+        self._send_to_server(url, data)
 
     def check_and_upload_project(self):
         if not "status" in self.project:
@@ -364,3 +367,22 @@ class AbstractExperiment(object):
                 self.check_step(step)
         self.logger_update_project(self.project["pid"],
                         self.project)
+
+    def _send_to_server(self, url, data):
+        '''
+        '''
+        if self._skip_server_part:
+            print "Server part is skipped!"
+            return
+        attempts = 0
+        data = urllib.urlencode(data)
+        while attempts < 3:
+            try:
+                resp = urllib.urlopen(url, data).read()
+                print pid, resp
+            except Exception, e:
+                print e
+                time.sleep(3)
+                attempts += 1
+        if attempts == 3:
+            self._skip_server_part = True
