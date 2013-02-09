@@ -15,6 +15,7 @@
     - [Execution](#_exp_exe)
     - [Steps checking](#_exp_check)
     - [Settings management](#_exp_settings)
+- [Manager class](#_manager)
 
 
 <a name="_intro"/>
@@ -143,43 +144,43 @@ Check all steps and upload project:
 - exp.get_as_dict(), returns {'name':..., 'steps': [s.as_dict(),...]}
 
 <a name="_exp_exe"/>
-## Порядок исполнение эксперимента:
+### Порядок исполнение эксперимента:
 
 	exp.execute(start_sid=0, end_sid=None)
 
 Выполяются последовательно все добавленные шаги.Порядок выполнения шага следующий: 
 
-1) обновление данных проекта из yaml file
-2) if project data lacks "status" dictionary then it will be added
-3) if status dictionary lacks step name then it will be added with None value
-3) проверка пререквезитов
-- если стоит флаг force, то нет проверки на выполненность текущего шага
-- if status dictionary lacks prerequiste step name then it will be added with None value
-- если предыдущий шаг не выполнен (status отличный от OK), то это шаг пропускается
-- проверяется статус текущего шага и если он равен OK то шаг пропускается
-4) если передан logger то отправляется сообщение о начале выполнения шага
-5) выполнение шага внутри Timer class
-6) если передан logger то отправляется сообщение о заверщение выполнения шага
-7) если стоит флаг save_output, то результат шага сохраняется в словарь self.settings[step.name], или если результат словарь то в self.settings сохраняются пары ключ-значение.
-8) происходит проверка статуса текущего шага с self.check_step(step)
-9) После этого обновляются данные проекта.
+1. Обновление данных проекта из yaml file.
+2. If project data lacks "status" dictionary then it will be added.
+3. If status dictionary lacks step name then it will be added with None value
+4. проверка пререквезитов:
+	- если стоит флаг force, то нет проверки на выполненность текущего шага
+	- if status dictionary lacks prerequiste step name then it will be added with None value
+	- если предыдущий шаг не выполнен (status отличный от OK), то это шаг пропускается
+	- проверяется статус текущего шага и если он равен OK то шаг пропускается
+5. если передан logger то отправляется сообщение о начале выполнения шага
+6. выполнение шага внутри Timer class
+7. если передан logger то отправляется сообщение о заверщение выполнения шага
+8. если стоит флаг save_output, то результат шага сохраняется в словарь self.settings[step.name], или если результат словарь то в self.settings сохраняются пары ключ-значение.
+9. происходит проверка статуса текущего шага с self.check_step(step)
+10. После этого обновляются данные проекта.
 
 <a name="_exp_check"/>
 ### Methods related to step checking
 
-Check step and returns None or result of checking.
+Check step and returns None or result of checking:
 
 	exp.check_step(step)
 
-Check all  avaliable steps with exp.check_step(step) and update project.
+Check all  avaliable steps with exp.check_step(step) and update project:
 
 	exp.check_avalibale_steps()
 
-Set all step's statuses to None
+Set all step's statuses to None:
 
 	exp.reset_avaliable_steps()
 
-Check added steps"
+Check added steps:
 
 	exp.check_steps()
 
@@ -190,6 +191,7 @@ Check added steps"
 - exp.get_settings()
 - exp.remove_project_data
 
+<a name="_manager"/>
 ## Описание менеджера экспериментов
 
 Суть менеджера в управление настройками проектов, которые хранятся как yaml файлы.
