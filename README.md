@@ -56,7 +56,7 @@ Usage:
 - **check_f**, функция, проверяющая статус этого шага после его выполнения, default None
 - **check_p**, имя шага, который должен быть выполнен (иметь статус OK), на момент выполнения этого шага, default None
 
-Инициация шага:
+Step initiation:
 
 	step = AbstractStep("step_name", None, cf, save_output=False, check_f=check_f, check_p="previous_step")
 
@@ -215,7 +215,7 @@ Check added steps:
 
 После этого используя значения self.config, выставляются self.projects_folder (директория с yaml файлами проектов), self.work_folder (директория с данными проектов) и self.settings_class.config = self.config. Если директории отсутствуют, то они создаются.
 
-### Добавление проекта:
+### Project adding:
 
 	pid = "name"
 	projecy_data = {'path_to': 'path'}
@@ -283,7 +283,7 @@ Model has preprocess_data method for any data preprocessing until returning. It 
 - AbstractFolderIO()
 - AbstractFoldersIO()
 
-### Работа с отдельным файлом
+### Working with files
 
 Avaliable attributes:
 
@@ -313,7 +313,7 @@ Avalibale methods:
 - process_with_iter(cf, **args)
 - sort(sort_func, reverse=True)
 
-### Работа с директорией
+### Working with folders
 
 	reader = AbstractFolderIO(folder, mask=".")
 
@@ -329,7 +329,7 @@ Avalibale methods:
 
 ### Работа со вложенными директориями
 
-### Полезные shortcuts
+### Useful shortcuts
 
 - sc_iter_filepath_folder(folder, mask="."), yield full path
 - sc_iter_filename_folder(folder, mask="."), yield file name
