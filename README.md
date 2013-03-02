@@ -16,6 +16,14 @@
     - [Steps checking](#_exp_check)
     - [Settings management](#_exp_settings)
 - [Manager class](#_manager)
+    - [Add project](#_manager_add_project)
+    - [Get project](#_manager_get_project)
+- [Data models](#_models)
+- [IO helpers](#_readers)
+    - [Working with files](#_readers_files)
+    - [Working with folders](#_readers_folders)
+    - [Working with nested folders](#_readers_folder_folders)
+    - [Useful shortcuts](#_readers_shortcuts)
 
 
 <a name="_intro"/>
@@ -215,6 +223,7 @@ Check added steps:
 
 После этого используя значения self.config, выставляются self.projects_folder (директория с yaml файлами проектов), self.work_folder (директория с данными проектов) и self.settings_class.config = self.config. Если директории отсутствуют, то они создаются.
 
+<a name="_manager_add_project"/>
 ### Project adding:
 
 	pid = "name"
@@ -229,6 +238,7 @@ Check added steps:
 
 	manager.recheck_folders_and_params(pid, project_data)
 
+<a name="_manager_get_project"/>
 ### Получение проекта.
 
 	project, settings = manager.get_project(pid)
@@ -247,6 +257,7 @@ Project dictionary contains data from project's yaml file. Settings dictionary �
 
 	manager.save(pid, project_data)
 
+<a name="_models"/>
 ## Модель для хранение данных
 	
 	from PyExp.models.abstract_model import AbstractModel
@@ -275,6 +286,7 @@ Project dictionary contains data from project's yaml file. Settings dictionary �
 
 Model has preprocess_data method for any data preprocessing until returning. It can be implemented in nested classes.
 
+<a name="_readers"/>
 ## Облегчение чтения данных
 
 Состоит из трех классов:
@@ -283,6 +295,7 @@ Model has preprocess_data method for any data preprocessing until returning. It 
 - AbstractFolderIO()
 - AbstractFoldersIO()
 
+<a name="_readers_files"/>
 ### Working with files
 
 Avaliable attributes:
@@ -313,12 +326,13 @@ Avalibale methods:
 - process_with_iter(cf, **args)
 - sort(sort_func, reverse=True)
 
+<a name="_readers_folders"/>
 ### Working with folders
 
 	reader = AbstractFolderIO(folder, mask=".")
 
 - iter_files(), yield file name
-- get_files(), return list of file names 
+- get_files(), return list of file names
 - iter_filenames(), yield file path
 - get_filenames(), return list of file paths
 - iter_path_names(), yield (name, full path)
@@ -327,9 +341,15 @@ Avalibale methods:
 - move_files_by_mask(dist_folder)
 - copy_files_by_mask(dist_folder)
 
+<a name="_readers_folder_folders"/>
 ### Работа со вложенными директориями
 
+<a name="_readers_shortcuts"/>
 ### Useful shortcuts
+
+```python
+from PyExp.readers.abstract_reader import *
+```
 
 - sc_iter_filepath_folder(folder, mask="."), yield full path
 - sc_iter_filename_folder(folder, mask="."), yield file name
