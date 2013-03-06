@@ -60,7 +60,10 @@ class AbstractModel(object):
         self.preprocess_data()
         result = ""
         for attr in self.dumpable_attributes:
-            result += "%s\t" % getattr(self, attr)
+            data = getattr(self, attr)
+            if attr in self.list_attributes:
+                data = ",".join([str(x) for x in data])
+            result += "%s\t" % data
         result = "%s\n" % result.strip()
         return result
 
