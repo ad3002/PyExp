@@ -19,11 +19,41 @@
     - sc_move_files(folder, dist_folder, mask=".")
 
 """
-
 import os
 import re
 import pickle
 import shutil
+import gzip
+import bz2
+
+class WizeOpener(object):
+    ''' Opener to open usual files and gzip archives.
+    '''   
+    def __init__(self, file_name, mode=None):
+        self.file_name = file_name
+        if not mode:
+            mode = "r"
+        assert mode in ["w", "r", "a", "wb", "rb", "ab"]
+        self.mode = mode
+    
+    def __enter__(self):
+        if self.file_name.endswith(".gz"):
+            print "Open as gz archive"
+            if not "b" in self.mode:
+                self.mode += "b"
+            self.fh = gzip.open(self.file_name, self.mode)
+        elif self.file_name.endswith(".bz2"):
+            print "Open as bz2 archive"
+            if not "b" in self.mode:
+                self.mode += "b"
+            self.fh = bz2.BZ2File(self.file_name, self.mode)
+        else:
+            self.fh = open(self.file_name, self.mode)
+        return self.fh
+    
+
+    def __exit__(self, type, value, traceback):
+        self.fh.close()
 
 class AbstractFileIO(object):
     """ Abstract class for working with abstract data.
@@ -49,18 +79,22 @@ class AbstractFileIO(object):
     - process_with_iter(self, cf, **args)
     """
 
+    
     def __init__(self):
         """ Do nothing."""
         self._data = None
 
+    def get_opener(self):
+        return WizeOpener
+
     def read_from_file(self, input_file):
         """ Read data from given input_file."""
-        with open(input_file) as fh:
+        with WizeOpener(input_file) as fh:
             self._data = fh.readlines()
 
     def read_online(self, input_file):
         """ Yield items from data online from input_file."""
-        with open(input_file) as fh:
+        with WizeOpener(input_file) as fh:
             for item in fh:
                 yield item
 
@@ -89,7 +123,7 @@ class AbstractFileIO(object):
 
     def write_to_file(self, output_file):
         """ Write data to given output_file."""
-        with open(output_file, "w") as fh:
+        with WizeOpener(output_file, "w") as fh:
             fh.writelines(self._data)
 
     def write_to_db(self, db_cursor):
@@ -234,7 +268,7 @@ class AbstractFolderIO(object):
             for name in files:
                 if re.search(self.mask, name):
                     path = os.path.join(root, name)
-                    with open(path, "rb") as fh:
+                    with WizeOpener(path, "rb") as fh:
                         yield fh.read()
 
     def iter_file_content_and_names(self):
@@ -243,7 +277,7 @@ class AbstractFolderIO(object):
             for name in files:
                 if re.search(self.mask, name):
                     path = os.path.join(root, name)
-                    with open(path, "rb") as fh:
+                    with WizeOpener(path, "rb") as fh:
                         yield fh.read(), name, path
 
     def move_files_by_mask(self, dist_folder):
@@ -303,7 +337,7 @@ def sc_process_file(file_name, cf, args_dict):
     reader.read(file_name)
     args_dict["name"] = name
     text = cf(text, **args_dict)
-    with open(file_name, "w") as fh:
+    with WizeOpener(file_name, "w") as fh:
         fh.write(text)
 
 def sc_process_folder(folder, cf, args_dict, mask="."):
@@ -313,7 +347,7 @@ def sc_process_folder(folder, cf, args_dict, mask="."):
     for text, name, file_name in reader.iter_file_content_and_names():
         args_dict["name"] = name
         text = cf(text, **args_dict)
-        with open(file_name, "w") as fh:
+        with WizeOpener(file_name, "w") as fh:
             fh.write(text)
 
 def sc_process_folder_to_other(folder, output_folder, cf, args_dict, mask=".", verbose=False):
@@ -331,12 +365,12 @@ def sc_process_folder_to_other(folder, output_folder, cf, args_dict, mask=".", v
         text = cf(text, **args_dict)
         output_file = os.path.join(output_folder,
                                    name)
-        with open(output_file, "w") as fh:
+        with WizeOpener(output_file, "w") as fh:
             fh.write(text)
 
 def read_pickle_file(pickle_file):
     ''' Read pickle file and retrun its content.
     '''
-    with open(pickle_file, "r") as fh:
+    with WizeOpener(pickle_file, "r") as fh:
         data = pickle.load(fh)
     return data
