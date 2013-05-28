@@ -11,7 +11,6 @@ import time
 import random
 import urllib
 import simplejson
-from PyExp.readers.abstract_reader import sc_iter_filename_folder
 
 STARTED = "Started"
 FINISHED = "Finished"
@@ -41,7 +40,9 @@ class Timer(object):
         if self.name:
             print 'Finished: [%s]' % self.name,
         delta = time.time() - self.timer_start
-        print ' elapsed: %s' % delta
+        minutes = int(delta) / 60
+        seconds =int(delta) % 60
+        print ' elapsed: %s min %s sec ' % (minutes, seconds)
 
 class AbstractStep(object):
     ''' Abstract step for exepriment is described by step name, input value,
@@ -104,25 +105,40 @@ class AbstractExperiment(object):
 
     ### Initialization section ###
 
-    def __init__(self, settings, project, name=None, logger=None, force=False, manager=None):
-        """ Init class """
-        if not name:
-            name = 'default'
-        if hasattr(logger, "__call__"):
-            self.logger = logger
-        else:
-            self.logger = None
+    def __init__(self, settings, project, **kwargs):
+        """ Init class 
+        kwargs:
+            - name
+            - logger
+            - force
+            - manager
+            - send_to_server
+        """
+        self.name = 'default'
+        if 'name' in kwargs:
+            self.name = kwargs['name']
+        self.logger = None
+        if 'logger' in kwargs:
+            logger = kwargs['logger']
+            if hasattr(logger, "__call__"):
+                self.logger = logger
+        self.force = False
+        if 'force' in kwargs:
+            self.force = kwargs['force']
+        self.manager = None
+        if 'manager' in kwargs:
+            self.manager = kwargs['manager']
+        self.send_to_server = None
+        if 'send_to_server' in kwargs:
+            self.send_to_server = kwargs['send_to_server']
         self.settings = settings
         self.project = project
-        self.name = name
-        self.force = force
         self.sp = 0
         self.pid = project["pid"]
         self.sid2step = {}
         self.all_steps = {}
         self.init_steps()
-        self.manager = manager
-        self.settings["manager"] = manager
+        self.settings["manager"] = self.manager
         self.settings["experiment"] = self
         self._skip_server_part = False
 
@@ -371,6 +387,8 @@ class AbstractExperiment(object):
     def _send_to_server(self, url, data):
         '''
         '''
+        if not self.send_to_server:
+            return
         if self._skip_server_part:
             print "Server part is skipped!"
             return
@@ -379,7 +397,8 @@ class AbstractExperiment(object):
         while attempts < 3:
             try:
                 resp = urllib.urlopen(url, data).read()
-                print pid, resp
+                print resp
+                break
             except Exception, e:
                 print e
                 time.sleep(3)
