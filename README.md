@@ -1,4 +1,4 @@
-# PyExp: a tiny Python framework for experiment execution
+# TinyExp:  a microframework for small computational experiments
 
 ## Contents
 
@@ -29,7 +29,7 @@
 <a name="_intro"/>
 ## Introduction
 
-Фреймоворк состоит из четырех частей:
+TinyExp includes four compoments:
 
 - класс для описания моделей
 - менеджер экспериментов
@@ -47,10 +47,13 @@
 При старте таймера, он печатате "Started: [step_name]...".
 При окончание шага, он печатает "Finished: [step_name] elepase: [time]".
 
+
 Usage:
 
-	with Timer(name="Step name"):
-		compute_smth(data)
+```python
+with Timer(name="Step name"):
+    compute_smth(data)
+```
 
 <a name="_step"/>
 ## Класс описывающий шаг
@@ -66,22 +69,26 @@ Usage:
 
 Step initiation:
 
-	step = AbstractStep("step_name", None, cf, save_output=False, check_f=check_f, check_p="previous_step")
+```python
+step = AbstractStep("step_name", None, cf, save_output=False, check_f=check_f, check_p="previous_step")
 
-	print step
-	>>> step_name
+print step
+>>> step_name
 
-	print step.get_as_dict().keys()
-	>>> ['name', 'cf', 'check', 'pre', 'save_output']
+print step.get_as_dict().keys()
+>>> ['name', 'cf', 'check', 'pre', 'save_output']
+```
 
 <a name="_exp_settings"/>
 ## Настройки эксперимента
 
 Инициация настроек эксперимента:
 
-	settings = AbstractExperimentSettings()
-	settings.as_dict().keys()
-	>>> ['files', 'folders', 'other', 'config']
+```python
+settings = AbstractExperimentSettings()
+settings.as_dict().keys()
+>>> ['files', 'folders', 'other', 'config']
+```
 
 Для создания субкласса настроек нужно добавить словари files, folders, other.
 
