@@ -62,6 +62,21 @@ class AbstractModel(object):
         for attr in self.dumpable_attributes:
             data = getattr(self, attr)
             if attr in self.list_attributes:
+                if data is None:
+                    data = []
+                data = ",".join([str(x) for x in data])
+            result += "%s\t" % data
+        result = "%s\n" % result.strip()
+        return result
+
+    def get_as_string(self, dumpable_attributes):
+        """ Get string representation with fields
+            defined in dumpable_attributes."""
+        self.preprocess_data()
+        result = ""
+        for attr in dumpable_attributes:
+            data = getattr(self, attr)
+            if attr in self.list_attributes:
                 data = ",".join([str(x) for x in data])
             result += "%s\t" % data
         result = "%s\n" % result.strip()
@@ -70,16 +85,28 @@ class AbstractModel(object):
     def set_with_dict(self, dictionary):
         """ Set object with dictionaty."""
         for key, value in dictionary.items():
-            if value == "None" or value is None:
-                value = None
-            elif key in self.int_attributes:
-                value = int(value)
-            elif key in self.float_attributes:
-                value = float(value)
-            elif key in self.list_attributes:
-                value = value.split(",")
-                value = [self.list_attributes_types[key](x) for x in value]
-            setattr(self, key, value)
+            try:
+                if value == "None" or value is None:
+                    value = None
+                elif key in self.int_attributes:
+                    value = int(value)
+                elif key in self.float_attributes:
+                    value = float(value)
+                elif key in self.list_attributes:
+                    if not value:
+                        value = []
+                        continue
+                    value = value.split(",")
+                    value = [self.list_attributes_types[key](x) for x in value]
+                setattr(self, key, value)
+            except ValueError, e:
+                print self.dumpable_attributes
+                print dictionary.items()
+                raise ValueError(e)
+            except TypeError, e:
+                print self.dumpable_attributes
+                print dictionary.items()
+                raise TypeError(e)
 
     def set_with_list(self, data):
         """ Set object with list."""
