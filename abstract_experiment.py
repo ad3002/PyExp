@@ -384,6 +384,11 @@ class AbstractExperiment(object):
         self.logger_update_project(self.project["pid"],
                         self.project)
 
+    def upload_to_server(self, url, data):
+        '''
+        ''' 
+        self._send_to_server(url, data)
+
     def _send_to_server(self, url, data):
         '''
         '''
