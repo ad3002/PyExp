@@ -5,6 +5,8 @@
 #@author: Aleksey Komissarov
 #@contact: ad3002@gmail.com 
 
+import simplejson
+
 class AbstractModel(object):
     """ Сlass for data wrapping.
         
@@ -110,8 +112,16 @@ class AbstractModel(object):
 
     def set_with_list(self, data):
         """ Set object with list."""
+        n = len(data)
+        dumpable_attributes = self.dumpable_attributes
+        if n != len(self.dumpable_attributes):
+            if hasattr(self, "alt_dumpable_attributes") and len(self.alt_dumpable_attributes) == n:
+                dumpable_attributes = self.alt_dumpable_attributes
+            else:
+                print data
+                raise Exception("Wrong number of fields in data.")
         for i, value in enumerate(data):
-            key = self.dumpable_attributes[i]
+            key = dumpable_attributes[i]
             if value == "None":
                 value = None
             elif key in self.int_attributes:
@@ -131,6 +141,14 @@ class AbstractModel(object):
         for attr in self.dumpable_attributes:
             result[attr] = getattr(self, attr)
         return result
+
+    def get_as_json(self, preprocess_func=None):
+        """ Return JSON representation.
+        """
+        d = self.get_as_dict()
+        if preprocess_func:
+            d = preprocess_func(d)
+        return simplejson.dumps(d)
 
     def preprocess_data(self):
         """ Any data preprocessing until returning."""

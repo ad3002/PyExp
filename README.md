@@ -29,6 +29,26 @@
 <a name="_intro"/>
 ## Introduction
 
+### Motivation
+
+data science
+Fast and duty experiment with data
+A lot of complex tools Taverna Galaxy
+lack of simple ways to execute serie of data processing steps
+create tool for processing files with data through funcitons
+
+### Implementation
+
+data in tab-delimited files
+yaml files
+steps with pre-cond, post-cond and check function
+logging to webserver
+
+### User case
+
+simple genome assemly workflow
+
+
 TinyExp includes four compoments:
 
 - класс для описания моделей
@@ -281,15 +301,23 @@ Project dictionary contains data from project's yaml file. Settings dictionary �
 При инициализации аттрибуты выставляются на None, 0 или 0.0.
 Строковая репрезентация объекта - это tab-delimited string of dumpable attributes with \n end-symbol. При этом дополнительно вызывается model.preprocess_data() для преобразование данных.
 
-### Создание объекта:
+### Creation:
 
 	model = AbstractModel()
 	model.set_with_dict(data_dict)
 	model.set_with_list(data_list)
 
-Модель можно получить как словарь:
+You can get model data as dictionary:
 
+```python
 	model_dict = model.get_as_dict()
+```
+
+In JSON format with optional preprosessing by preprocess_func:
+
+```python
+	model_json = model.get_as_json(preprocess_func=None)
+```
 
 Model has preprocess_data method for any data preprocessing until returning. It can be implemented in nested classes.
 
