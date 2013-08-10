@@ -28,12 +28,12 @@ def execute(args, usage, dataset_dict, exp_settings, exp_class, manager_class):
     end = int(args[3])
     dataset = args[4]
     if not dataset in dataset_dict:
-        print "Avaliable datasets:", dataset_dict.values()
+        print "Available datasets:", ", ".join(dataset_dict.keys())
         exit(0)
     dataset = dataset_dict[dataset]
     commands = ["run","force","check"]
     if not command in commands:
-        print "Avaliable commands:", commands
+        print "Available commands:", commands
         exit(0)
     if command == "run":
         execute_task(dataset, 
