@@ -1,4 +1,4 @@
-# TinyExp:  a microframework for small computational experiments
+# TinyExp: a microframework for small computational experiments
 
 ## Contents
 
@@ -25,71 +25,62 @@
     - [Working with nested folders](#_readers_folder_folders)
     - [Useful shortcuts](#_readers_shortcuts)
 
-
 <a name="_intro"/>
 ## Introduction
 
-### Motivation
-
-data science
-Fast and duty experiment with data
-A lot of complex tools Taverna Galaxy
-lack of simple ways to execute serie of data processing steps
-create tool for processing files with data through funcitons
-
-### Implementation
-
-data in tab-delimited files
-yaml files
-steps with pre-cond, post-cond and check function
-logging to webserver
-
-### User case
-
-simple genome assemly workflow
-
+A data analysis workflow frequently consists of a sequence of steps applied to datasets. The purpose of TinyExp simplify fast creation and execution of such workflows. There are many complex tools like Taverna or Galaxy but lack of tolls for simple execution of series of data processing steps. TinyExp uses YAML files for keeping data and experiments settings. A preferable way to keep datasets is a tab delimited files. Each workflow steps can be extended with precondition, postcondition and checking functions. Execution status can be submitted to external webserver.
 
 TinyExp includes four compoments:
 
-- класс для описания моделей
-- менеджер экспериментов
-- собственно класс для описания экспериментов состоящих их последовательных шагов
-- и класс облегчающий чтение данных
+- A class for fast model description.
+- A class for experiment manager.
+- A class for workflow description as a sequence of steps.
+- And a class for simplified data IO.
 
-Данные для эксперимента состоят из двух частей:
+The data for the experiment consists of two parts:
 
-- данные общие для всех проектов, которые будут выполнены в этом эксперименте. Это названия файлов и директорий. 
-- данные собственно проекта
+- Data common to all projects to be implemented in this experiment. For example, names of files or directories
+- The project data.
 
 <a name="_timer"/>
-## Timer
+## Timer class
 
-При старте таймера, он печатате "Started: [step_name]...".
-При окончание шага, он печатает "Finished: [step_name] elepase: [time]".
-
+This class provides a wrapper for measure time of execution.
 
 Usage:
 
 ```python
 with Timer(name="Step name"):
-    compute_smth(data)
+    compute_something(data)
+
+'''
+>>> Started: [step_name]...
+>>> Finished: [step_name] elepase: [time]
+'''
 ```
 
 <a name="_step"/>
-## Класс описывающий шаг
+## Class for step descripion
 
-Каждый шаг имеет следующие параметры:
+Every step has following properties:
 
 - **name**, step name
-- **data**, дополнительные данные для передаче в исполняющую функцию.
-- **cf**, исполняющая функция
+- **data**, additional data for a function.
+- **cf**, a function
 - **save_output** flag, default False
-- **check_f**, функция, проверяющая статус этого шага после его выполнения, default None
-- **check_p**, имя шага, который должен быть выполнен (иметь статус OK), на момент выполнения этого шага, default None
+- **check_f**, function that check status of the step after execution, default is None
+- **check_p**, name of step that cab be successfully executed (it has status OK) before this step, default is None
 
 Step initiation:
 
 ```python
+
+def cf(*arguments, **keywords):
+	pass
+
+def chech_f(*arguments, **keywords):
+	return "OK"
+
 step = AbstractStep("step_name", None, cf, save_output=False, check_f=check_f, check_p="previous_step")
 
 print step
@@ -100,9 +91,9 @@ print step.get_as_dict().keys()
 ```
 
 <a name="_exp_settings"/>
-## Настройки эксперимента
+## Experiment settings
 
-Инициация настроек эксперимента:
+Settings initiation:
 
 ```python
 settings = AbstractExperimentSettings()
@@ -110,13 +101,13 @@ settings.as_dict().keys()
 >>> ['files', 'folders', 'other', 'config']
 ```
 
-Для создания субкласса настроек нужно добавить словари files, folders, other.
+Each subclass of AbstractExperimentSettings must have three dictionaries (files, folders, other) that keepproject's filenames, foldernames, and other parameters needed for workflow execution.
 
 <a name="_exp"/>
-## Класс эксперимента
+## Class for experiment description
 
 <a name="_exp_attr"/>
-### Аттрибуты эксеримента:
+### Experiments attributes:
 
 - **settings**, settings object
 - **project**, project object
@@ -130,13 +121,15 @@ settings.as_dict().keys()
 - **sid2step**, sid to step dictionary
 
 <a name="_exp_init"/>
-### Инициация эксперимента:
+### Experiment initiation:
 
-	project, settings = manager.get_project(pid)
-	exp = AbstractExperiment(settings, project, name=None, force=False, logger=None, manager=None)
+```python
+project, settings = manager.get_project(pid)
+exp = AbstractExperiment(settings, project, name=None, force=False, logger=None, manager=None)
+```
 
 <a name="_exp_init_params"/>
-### Параметры инициации:
+### Parameters of initiation:
 
 - **settings**, settings object
 - **project**, project object
@@ -145,7 +138,7 @@ settings.as_dict().keys()
 - **force**, skip prerequisite checking for steps, default False
 - **manager**, project manager object, default None
 
-В процессе создания вызывается метод init_steps(self). Для инициации доступных шагов в субклассе должен быть создан метод init_steps(self). 
+To initiate available step you must add to subclass init_steps() method with list of steps.
 
 <a name="_exp_logger"/>
 ### Logger function example:
@@ -167,7 +160,7 @@ Check all steps and upload project:
 <a name="_exp_steps"/>
 ### Avaliable methods related to steps management:
 
-- exp.add_step(step), добавленному шагу присваивается sid (step_id)
+- exp.add_step(step), add step with assigned sid (step_id)
 - exp.get_all_steps(), returns list of step objects
 - exp.get_avaliable_steps(), returns registered steps
 - exp.print_steps(), prints "Step [sid]: [string representation of step]" for each step
@@ -179,45 +172,55 @@ Check all steps and upload project:
 - exp.get_as_dict(), returns {'name':..., 'steps': [s.as_dict(),...]}
 
 <a name="_exp_exe"/>
-### Порядок исполнение эксперимента:
+### Experiment executin order:
 
-	exp.execute(start_sid=0, end_sid=None)
+```python
+exp.execute(start_sid=0, end_sid=None)
+```
 
 Выполяются последовательно все добавленные шаги.Порядок выполнения шага следующий: 
 
-1. Обновление данных проекта из yaml file.
+1. Refresh project settings from yaml file.
 2. If project data lacks "status" dictionary then it will be added.
 3. If status dictionary lacks step name then it will be added with None value
-4. проверка пререквезитов:
-	- если стоит флаг force, то нет проверки на выполненность текущего шага
+4. Check preconditions:
+	- if force flag is true, then skip current step step status
 	- if status dictionary lacks prerequiste step name then it will be added with None value
-	- если предыдущий шаг не выполнен (status отличный от OK), то это шаг пропускается
-	- проверяется статус текущего шага и если он равен OK то шаг пропускается
-5. если передан logger то отправляется сообщение о начале выполнения шага
-6. выполнение шага внутри Timer class
-7. если передан logger то отправляется сообщение о заверщение выполнения шага
-8. если стоит флаг save_output, то результат шага сохраняется в словарь self.settings[step.name], или если результат словарь то в self.settings сохраняются пары ключ-значение.
-9. происходит проверка статуса текущего шага с self.check_step(step)
-10. После этого обновляются данные проекта.
+	- if previous step is not executed (status different from OK), then skip this step
+	- check current step status, if this step was previously executed then skip it
+5. If there is a logger function, then send a message about step start
+6. Execute step wrapped in Timer class
+7. If there is a logger function, then send a message about step finishing
+8. If flag save_output is true, then save step return to self.settings[step.name], if step returned a dictionaly then save key, values pairs into self.settings dictionary.
+9. Check current step status with self.check_step(step) method.
+10. Save project to yaml file.
 
 <a name="_exp_check"/>
 ### Methods related to step checking
 
 Check step and returns None or result of checking:
 
-	exp.check_step(step)
+```python
+exp.check_step(step)
+```
 
 Check all  avaliable steps with exp.check_step(step) and update project:
 
-	exp.check_avalibale_steps()
+```python
+exp.check_avalibale_steps()
+```
 
 Set all step's statuses to None:
 
-	exp.reset_avaliable_steps()
+```python
+exp.reset_avaliable_steps()
+```
 
 Check added steps:
 
-	exp.check_steps()
+```python
+exp.check_steps()
+```
 
 <a name="_exp_settings"/>
 ### Methods related to settings
@@ -227,7 +230,7 @@ Check added steps:
 - exp.remove_project_data
 
 <a name="_manager"/>
-## Описание менеджера экспериментов
+## Experiment manager
 
 Суть менеджера в управление настройками проектов, которые хранятся как yaml файлы.
 
@@ -285,9 +288,11 @@ Project dictionary contains data from project's yaml file. Settings dictionary �
 	manager.save(pid, project_data)
 
 <a name="_models"/>
-## Модель для хранение данных
-	
-	from PyExp.models.abstract_model import AbstractModel
+## Data model
+
+```python
+from PyExp.models.abstract_model import AbstractModel
+```
 
 Класс содержит следующие аттрибуты:
 
@@ -322,9 +327,9 @@ In JSON format with optional preprosessing by preprocess_func:
 Model has preprocess_data method for any data preprocessing until returning. It can be implemented in nested classes.
 
 <a name="_readers"/>
-## Облегчение чтения данных
+## IO simplification classes 
 
-Состоит из трех классов:
+Includes three classes:
 
 - AbstractFileIO()
 - AbstractFolderIO()
@@ -340,7 +345,7 @@ Avaliable attributes:
 
 Avalibale methods:
 
-- read_from_file(input_file), прочитанные данные хранятся в self.data.
+- read_from_file(input_file), data is saved in self.data.
 - read_online(input_file), yield line
 - read_from_db(db_cursor), yield item
 - read_from_mongodb(table, query), yield item
@@ -377,7 +382,7 @@ Avalibale methods:
 - copy_files_by_mask(dist_folder)
 
 <a name="_readers_folder_folders"/>
-### Работа со вложенными директориями
+### Working with nested folders
 
 <a name="_readers_shortcuts"/>
 ### Useful shortcuts
