@@ -178,7 +178,7 @@ Check all steps and upload project:
 exp.execute(start_sid=0, end_sid=None)
 ```
 
-Выполяются последовательно все добавленные шаги.Порядок выполнения шага следующий: 
+An experiment class executes each added steps with following logic:
 
 1. Refresh project settings from yaml file.
 2. If project data lacks "status" dictionary then it will be added.
@@ -232,60 +232,75 @@ exp.check_steps()
 <a name="_manager"/>
 ## Experiment manager
 
-Суть менеджера в управление настройками проектов, которые хранятся как yaml файлы.
+An expeirment manager provide project settings persistence using yaml files:
 
-	settings_class = AbstractExperimentSettings
-	manager = ProjectManager(settings_class) 
+```python
+settings_class = AbstractExperimentSettings
+manager = ProjectManager(settings_class) 
+```
 
-Для инициации менеджер берет аргументом класс настроек эксперимента. При инициации менеджер пытается прочитать в родительской директории os specific yaml файл с настройками:
+Upon initiation the manager is trying to read OS specific yaml configuration file in the parent directory:
 
 - config.win.yaml
 - config.mac.yaml
 - config.yaml (default and *nix)
 
-Содержимое этого фала сохраняется в self.config. Если не удается прочитать файл, то создаются значения по умполчанию для self.congig:
+Then it save settings from this file in self.config property. If the manager fails find settings file then it creates deffult self.config:
 
-	self.config = {
-	                'path_work_folder': 'data',
-	                'path_workspace_folder': '../..',
-	                'projects_folder': 'projects',
-	            }
+```python
+self.config = {
+                'path_work_folder': 'data',
+                'path_workspace_folder': '../..',
+                'projects_folder': 'projects',
+            }
+```
 
-После этого используя значения self.config, выставляются self.projects_folder (директория с yaml файлами проектов), self.work_folder (директория с данными проектов) и self.settings_class.config = self.config. Если директории отсутствуют, то они создаются.
+Using settings from self.config it sets self.projects_folder (folder with project yaml files), self.work_folder (folder with project data), and self.settings_class.config = self.config.
 
 <a name="_manager_add_project"/>
-### Project adding:
+### Project adding
 
-	pid = "name"
-	projecy_data = {'path_to': 'path'}
-	manager.add_proejct(pid, project_data, init=False, force=False)
+```python
+pid = "name"
+projecy_data = {'path_to': 'path'}
+manager.add_proejct(pid, project_data, init=False, force=False)
+```
 
-Если force, то yaml файл проекта будет удален. Если не force и yaml файл был создан ранее, то вылетит исключение.
-После этого происходит вызов self._init_project(...), который может быть переписан в субклассах для инитиации данных переданных с project_data.
-Если init, то дополнительно происходит вызов _init_data(...), в котором происходит создание всех директорий согласно данным work_folder, path_to и folder_path из settings_class.folders.
+With force flag project yaml file will be deleted, otherwise if a yaml file exists then the manager raise exception. After project adding the manager calls  self._init_project(...) which can be changed in subclasses for data initiation with project_data settings. 
+With init flag it additinally calls sekf._init_data(...) which create all folders according to work_folder, path_to, and folder_path settings from settings_class.folders.
 
-Проверка новых параметров без удаления проекта:
+Also you can recheck parameters and create folders with:
 
-	manager.recheck_folders_and_params(pid, project_data)
+```
+manager.recheck_folders_and_params(pid, project_data)
+```
 
 <a name="_manager_get_project"/>
-### Получение проекта.
+### Access to project data
 
-	project, settings = manager.get_project(pid)
+```python
+project, settings = manager.get_project(pid)
+```
 
-Project dictionary contains data from project's yaml file. Settings dictionary содержит данные из settings class с поправленными путями according to work_folder path and path_to path.
+A project dictionary contains data from project's yaml file. A settings dictionary contains data from settings class with correct paths according to work_folder path and path_to path.
 
-### Получение списка путей к yaml файлам всех проктов:
+### Access to all project yaml files
 
-	project_files = manager.get_all_projects()
+```python
+project_files = manager.get_all_projects()
+```
 
 ### Project removing:
 
-	manager.remove_project(pid)
+```python
+manager.remove_project(pid)
+```
 
 ### Project saving
 
-	manager.save(pid, project_data)
+```python
+manager.save(pid, project_data)
+```
 
 <a name="_models"/>
 ## Data model
@@ -294,34 +309,37 @@ Project dictionary contains data from project's yaml file. Settings dictionary �
 from PyExp.models.abstract_model import AbstractModel
 ```
 
-Класс содержит следующие аттрибуты:
+Class attributes:
 
-- dumpable_attributes, список всех аттрибутов
-- int_attributes, список тех из них, которые типа int
-- float_attributes, список тех из них, которые типа float
-- list_attributes, список тех из них, которые типа list
-- list_attributes_types, словарь типов для аттрибутов из list_attributes
-- other_attributes, словарь других аттрибутов
+- dumpable_attributes, a list of all attributes
+- int_attributes, a list of int type attributes
+- float_attributes, a list of float type attributes
+- list_attributes, a list of list type attributes
+- list_attributes_types, a dictionay of list attributes types
+- other_attributes, a list of other types attributes
 
-При инициализации аттрибуты выставляются на None, 0 или 0.0.
-Строковая репрезентация объекта - это tab-delimited string of dumpable attributes with \n end-symbol. При этом дополнительно вызывается model.preprocess_data() для преобразование данных.
+While initialisation each attribute is set to default values (0, 0.0, or None for list attributes).
+
+A string representation of object is a tab-delimited string of dumpable attributes (preprocessed with self.preprocess_data() method) with \n end-symbol.
 
 ### Creation:
 
-	model = AbstractModel()
-	model.set_with_dict(data_dict)
-	model.set_with_list(data_list)
+```python
+model = AbstractModel()
+model.set_with_dict(data_dict)
+model.set_with_list(data_list)
+```
 
 You can get model data as dictionary:
 
 ```python
-	model_dict = model.get_as_dict()
+model_dict = model.get_as_dict()
 ```
 
 In JSON format with optional preprosessing by preprocess_func:
 
 ```python
-	model_json = model.get_as_json(preprocess_func=None)
+model_json = model.get_as_json(preprocess_func=None)
 ```
 
 Model has preprocess_data method for any data preprocessing until returning. It can be implemented in nested classes.
