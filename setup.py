@@ -12,6 +12,6 @@ setup(
     description='A microframework for small computational experiments.',
     long_description=open('README').read(),
     install_requires=[
-
+        'pyyaml >= 3.0',
     ],
 )
