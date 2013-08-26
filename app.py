@@ -1,5 +1,6 @@
 import sys
 import shutil
+import yaml
 from abstract_experiment import AbstractStep
 
 def _create_projects(exp_settings_class, manager_class, all_projects):
@@ -19,7 +20,7 @@ def _create_projects(exp_settings_class, manager_class, all_projects):
 def execute(args, usage, dataset_dict, exp_settings, exp_class, manager_class):
     ''' Execute experiment with givent args.
     '''
-    if not len(args) == 5:
+    if not len(args) in [5,7]:
         print usage
         exit(0)
     command = args[0]
@@ -27,6 +28,11 @@ def execute(args, usage, dataset_dict, exp_settings, exp_class, manager_class):
     start = int(args[2])
     end = int(args[3])
     dataset = args[4]
+    settings_context = None
+    project_context = None
+    if len(args) > 5:
+        settings_context = args[5]
+        project_context = args[6]
     if not dataset in dataset_dict:
         print "Available datasets:", ", ".join(dataset_dict.keys())
         exit(0)
@@ -44,7 +50,9 @@ def execute(args, usage, dataset_dict, exp_settings, exp_class, manager_class):
                     force=False,
                     exp_settings_class=exp_settings,
                     exp_class = exp_class,
-                    manager_class = manager_class
+                    manager_class = manager_class,
+                    settings_context = settings_context,
+                    project_context = project_context
                     )
     if command == "force":
         execute_task(dataset, 
@@ -55,7 +63,9 @@ def execute(args, usage, dataset_dict, exp_settings, exp_class, manager_class):
                     force=True,
                     exp_settings_class=exp_settings,
                     exp_class = exp_class,
-                    manager_class = manager_class
+                    manager_class = manager_class,
+                    settings_context = settings_context,
+                    project_context = project_context                    
                     )
     if command == "check":
         check_task(dataset, 
@@ -66,7 +76,9 @@ def execute(args, usage, dataset_dict, exp_settings, exp_class, manager_class):
                     force=False,
                     exp_settings_class=exp_settings,
                     exp_class = exp_class,
-                    manager_class = manager_class
+                    manager_class = manager_class,
+                    settings_context = settings_context,
+                    project_context = project_context
                     )
 
 def add_step(exp, task, manager, pid):
@@ -104,7 +116,9 @@ def execute_task(dataset_gen,
                                     force=None,
                                     exp_settings_class=None,
                                     exp_class = None,
-                                    manager_class = None
+                                    manager_class = None,
+                                    settings_context = None,
+                                    project_context = None,
                                     ):
     ''' Execute task.
     '''
@@ -117,7 +131,7 @@ def execute_task(dataset_gen,
         print i, n, pid, task
         experiment_settings = exp_settings_class()
         manager = manager_class(experiment_settings)
-        project, settings = manager.get_project(pid)
+        project, settings = manager.get_project(pid, settings_context=settings_context, project_context=project_context)
         exp = exp_class(settings, project, name=exp_name, manager=manager, force=force)
         if "," in task:
             print "Complex task"
@@ -127,7 +141,7 @@ def execute_task(dataset_gen,
         else:
             print "Simple task"
             add_step(exp, task, manager, pid)
-        exp.execute()
+        exp.execute(project_context=project_context)
         print "\a"
     print "\a\a\a\a"
 
@@ -173,6 +187,8 @@ def run_app(exp_class, exp_settings_class, manager_class, dataset_dict):
                       "\nOR\ncreate dataset"
                       "\nOR\nshow dataset"
                       "\nOR\ncheck dataset"
+                      "\nOR\nyaml file_name"
+                      "\nOR\nyaml generate file_name"
                       )
 
     args = sys.argv[1:]
@@ -192,9 +208,72 @@ def run_app(exp_class, exp_settings_class, manager_class, dataset_dict):
             else:
                 print "Available datasets:", ", ".join(dataset_dict.keys())
                 exit(1)
+        elif args[0] == "yaml":
+            file_name = args[1]
+            try:
+                with open(file_name) as fh:
+                    data = yaml.load(fh.read())
+            except Exception, e:
+                print e
+                print "Can't read yaml file %s" % file_name
+                exit(1)
+            try:
+                if type(data["steps"]) is list:
+                    data["steps"] = ",".join(data["steps"])
+                if "data" in data:
+                    dataset_items = [x[0] for x in dataset_dict[data["dataset"]]()]
+                    if not data["data"] in dataset_items:
+                        print "Wrong data parameter in yaml file."
+                        print "Available values:", ",".join(dataset_items)
+                        exit(1)
+                    data["start"] =  dataset_items.index(data["data"])
+                    data["end"] = data["start"] + 1
+                if not "settings_context" in data:
+                    data["settings_context"] = None
+                if not "project_context" in data:
+                    data["project_context"] = None
+                args = [
+                    data["command"],
+                    data["steps"],
+                    data["start"],
+                    data["end"],
+                    data["dataset"],
+                    data["settings_context"],
+                    data["project_context"],
+                ]
+            except Exception, e:
+                print e
+                print "Necessary yaml fields: command (str), steps (list), start (int), end (int), dataset (str)"
+                print "Optional fields: data (str), settings_context (dict), project_context (dict)"
+                print "OR you may generate a yaml file with: 'yaml generate file_name' command"
+                exit(1)
+
+            execute(args,
+                usage, 
+                dataset_dict, 
+                exp_settings_class, 
+                exp_class, 
+                manager_class
+            )
         else:
             print usage
             exit(1)
+    elif len(args) == 3:
+        if args[0] == "yaml" and args[1]=="generate":
+            file_name = args[2]
+            data = {
+                'command': 'force',
+                'steps': ["a", "b"],
+                'start': 0,
+                'end': 1,
+                'dataset': 'dataset',
+                'data': None,
+                'settings_context': None,
+                'project_context': None,
+                'avaliable_steps': exp_class(None, None).get_step_names(),
+            }
+            with open(file_name, "w") as fh:
+                fh.write(yaml.dump(data))
     else:
         execute(args,
                 usage, 
