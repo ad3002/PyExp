@@ -110,8 +110,8 @@ class ProjectManager(object):
             return True
         return False
 
-    def get_project(self, pid):
-        """ Get project data by pid.
+    def get_project(self, pid, settings_context=None, project_context=None):
+        """ Get project data by pid. You can change settings and project fields according to given contexts.
         """
         if not self._check_pid(pid):
             raise ProjectManagerException("PID (%s) doesn't exists." % pid)
@@ -119,6 +119,20 @@ class ProjectManager(object):
         with open(file_path, "r") as fh:
             project_data = yaml.load(fh)
         settings = self._fix_paths(project_data)
+        if settings_context:
+            for k, v in settings_context.items():
+                if type(v) is dict:
+                    for k2 in v:
+                        settings[k][k2] = v[k2]
+                else:
+                    settings[k] = v
+        if project_context:
+            for k, v in project_context.items():
+                if type(v) is dict:
+                    for k2 in v:
+                        project_data[k][k2] = v[k2]
+                else:
+                    project_data[k] = v
         return project_data, settings
 
     def _fix_paths(self, project):
