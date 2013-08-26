@@ -103,6 +103,8 @@ class AbstractExperiment(object):
     An experiment is a sequence of steps (AbstractStep).
     """
 
+    all_steps = None
+
     ### Initialization section ###
 
     def __init__(self, settings, project, **kwargs):
@@ -114,6 +116,10 @@ class AbstractExperiment(object):
             - manager
             - send_to_server
         """
+        # init empty class
+        if settings is None and project is None:
+            self.init_steps()
+            return
         self.name = 'default'
         if 'name' in kwargs:
             self.name = kwargs['name']
@@ -158,6 +164,14 @@ class AbstractExperiment(object):
     def get_all_steps(self):
         """ Get list of steps."""
         return [self.sid2step[i] for i in xrange(0, self.sp) if self.sid2step[i]]
+
+    def get_step_names(self):
+        '''
+        '''
+        result = []
+        for x in self.get_avaliable_steps():
+            result.append(x["name"])
+        return result
 
     def get_avaliable_steps(self):
         ''' Return registered steps.'''
@@ -208,12 +222,12 @@ class AbstractExperiment(object):
 
     ### Execution section ###
 
-    def execute(self, start_sid=0, end_sid=None):
+    def execute(self, start_sid=0, end_sid=None, project_context=None):
         """ Execute sequence of steps."""
         steps = self.get_all_steps()
         for step in steps[start_sid:end_sid]:
             # refresh project
-            self.project, _settings = self.manager.get_project(self.project["pid"])
+            self.project, _settings = self.manager.get_project(self.project["pid"], project_context=project_context)
             if not "status" in self.project:
                 self.project["status"] = {}
             if not step.name in self.project["status"]:
