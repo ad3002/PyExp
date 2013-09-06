@@ -1,4 +1,4 @@
-# TinyExp: a microframework for small computational experiments
+# PyExp: a microframework for small computational experiments
 
 ## Contents
 
