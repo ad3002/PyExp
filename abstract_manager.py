@@ -47,7 +47,7 @@ class ProjectManager(object):
         else:
             file_path = os.path.join("/root/Dropbox/workspace/PySatDNA", "config.yaml")
             if not os.path.isfile(file_path):
-                file_path = "/home/akomissarov/libs/PySatDNA/config.dobi.yaml"
+                file_path = "~/libs/PySatDNA/config.dobi.yaml"
         try:
             with open(file_path) as fh:
                 self.config = yaml.load(fh)
