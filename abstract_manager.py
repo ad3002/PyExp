@@ -44,8 +44,10 @@ class ProjectManager(object):
             file_path = "../config.win.yaml"
         elif self.os == "Darwin":
             file_path = "../config.mac.yaml"
-        else: 
+        else:
             file_path = os.path.join("/root/Dropbox/workspace/PySatDNA", "config.yaml")
+            if not os.path.isfile(file_path):
+                file_path = "/home/akomissarov/libs/PySatDNA/config.dobi.yaml"
         try:
             with open(file_path) as fh:
                 self.config = yaml.load(fh)
@@ -129,6 +131,7 @@ class ProjectManager(object):
         if project_context:
             for k, v in project_context.items():
                 if type(v) is dict:
+                    project_data.setdefault(k, {})
                     for k2 in v:
                         project_data[k][k2] = v[k2]
                 else:
