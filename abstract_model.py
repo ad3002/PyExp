@@ -60,29 +60,21 @@ class AbstractModel(object):
         """ Get string representation with fields
             defined in dumpable_attributes."""
         self.preprocess_data()
-        result = ""
+        result = []
         for attr in self.dumpable_attributes:
             data = getattr(self, attr)
             if attr in self.list_attributes:
                 if data is None:
                     data = []
                 data = ",".join([str(x) for x in data])
-            result += "%s\t" % data
-        result = "%s\n" % result.strip()
+            result.append(str(data).strip())
+        result = "%s\n" % "\t".join(result)
         return result
 
     def get_as_string(self, dumpable_attributes):
         """ Get string representation with fields
             defined in dumpable_attributes."""
-        self.preprocess_data()
-        result = []
-        for attr in dumpable_attributes:
-            data = getattr(self, attr)
-            if attr in self.list_attributes:
-                data = ",".join([str(x).strip() for x in data])
-            result.append(str(data).strip())
-        result = "%s\n" % "\t".join(result)
-        return result
+        return self.__str__()
 
     def set_with_dict(self, dictionary):
         """ Set object with dictionaty."""
