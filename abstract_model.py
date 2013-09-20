@@ -143,6 +143,6 @@ class AbstractModel(object):
         return simplejson.dumps(d)
 
     def preprocess_data(self):
-        """ Any data preprocessing until returning."""
+        """ Any data preprocessing before returning."""
         pass
 
