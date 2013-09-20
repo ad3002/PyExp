@@ -75,13 +75,13 @@ class AbstractModel(object):
         """ Get string representation with fields
             defined in dumpable_attributes."""
         self.preprocess_data()
-        result = ""
+        result = []
         for attr in dumpable_attributes:
             data = getattr(self, attr)
             if attr in self.list_attributes:
-                data = ",".join([str(x) for x in data])
-            result += "%s\t" % data
-        result = "%s\n" % result.strip()
+                data = ",".join([str(x).strip() for x in data])
+            result.append(str(data).strip())
+        result = "%s\n" % "\t".join(result)
         return result
 
     def set_with_dict(self, dictionary):
