@@ -13,7 +13,10 @@ def _create_projects(exp_settings_class, manager_class, all_projects):
             project, settings = manager.get_project(pid)
             manager.recheck_folders_and_params(pid, project)       
             print "Project %s was added early" % pid
-        except:
+        except AttributeError, e:
+            print "ERROR: please, check that all settings given as dictionaries, not sets!"
+        except Exception, e:
+            print "Something wrong:", e
             manager.add_project(pid, project_data, init=True)
             print "Project %s added" % pid
 
