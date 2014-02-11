@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+#@created: 04.06.2011
+#@author: Aleksey Komissarov
+#@contact: ad3002@gmail.com 
 import sys
 import shutil
 import yaml
@@ -25,7 +31,7 @@ def execute(args, usage, dataset_dict, exp_settings, exp_class, manager_class):
     '''
     if not len(args) in [5,7]:
         print usage
-        exit(0)
+        sys.exit(0)
     command = args[0]
     tasks = args[1]
     start = int(args[2])
@@ -38,12 +44,13 @@ def execute(args, usage, dataset_dict, exp_settings, exp_class, manager_class):
         project_context = args[6]
     if not dataset in dataset_dict:
         print "Available datasets:", ", ".join(dataset_dict.keys())
-        exit(0)
+        sys.exit(0)
     dataset = dataset_dict[dataset]
     commands = ["run","force","check"]
-    if not command in commands:
-        print "Available commands:", commands
-        exit(0)
+    if not  command.startswith("rw_"):
+        if not command in commands:
+            print "Available commands:", commands
+            sys.exit(0)
     if command == "run":
         execute_task(dataset, 
                     tasks, 
@@ -58,7 +65,7 @@ def execute(args, usage, dataset_dict, exp_settings, exp_class, manager_class):
                     project_context = project_context
                     )
     if command == "force":
-        execute_task(dataset, 
+        execute_task(dataset,
                     tasks, 
                     start=start, 
                     end=end, 
@@ -83,6 +90,21 @@ def execute(args, usage, dataset_dict, exp_settings, exp_class, manager_class):
                     settings_context = settings_context,
                     project_context = project_context
                     )
+    if command.startswith("rw"):
+        commands = command.split("_")
+        execute_task(dataset,
+                    tasks, 
+                    start=start, 
+                    end=end, 
+                    exp_name="default", 
+                    force=True,
+                    exp_settings_class=exp_settings,
+                    exp_class = exp_class,
+                    manager_class = manager_class,
+                    settings_context = settings_context,
+                    project_context = project_context,
+                    path_replacing = commands,
+                    )
 
 def add_step(exp, task, manager, pid):
     ''' Add step to experiment.
@@ -94,7 +116,7 @@ def add_step(exp, task, manager, pid):
         print "Avaliable steps: " 
         for x in exp.get_avaliable_steps():
             print x["name"]
-        exit(0)
+        sys.exit(0)
     if "manager" in s and s["manager"]:
             input = {"manager":manager, 
                      "pid":pid,
@@ -122,6 +144,7 @@ def execute_task(dataset_gen,
                                     manager_class = None,
                                     settings_context = None,
                                     project_context = None,
+                                    path_replacing= None,
                                     ):
     ''' Execute task.
     '''
@@ -134,7 +157,7 @@ def execute_task(dataset_gen,
         print i, n, pid, task
         experiment_settings = exp_settings_class()
         manager = manager_class(experiment_settings)
-        project, settings = manager.get_project(pid, settings_context=settings_context, project_context=project_context)
+        project, settings = manager.get_project(pid, settings_context=settings_context, project_context=project_context, path_replacing=path_replacing)
         exp = exp_class(settings, project, name=exp_name, manager=manager, force=force)
         if "," in task:
             print "Complex task"
@@ -202,7 +225,7 @@ def run_app(exp_class, exp_settings_class, manager_class, dataset_dict):
                 _create_projects(exp_settings_class, manager_class, all_projects)
             else:
                 print "Available datasets:", ", ".join(dataset_dict.keys())
-                exit(1)
+                sys.exit(1)
         elif args[0] == "show":
             if args[1] in dataset_dict:
                 all_projects = dataset_dict[args[1]]()
@@ -210,7 +233,7 @@ def run_app(exp_class, exp_settings_class, manager_class, dataset_dict):
                     print i, project
             else:
                 print "Available datasets:", ", ".join(dataset_dict.keys())
-                exit(1)
+                sys.exit(1)
         elif args[0] == "yaml":
             file_name = args[1]
             try:
@@ -219,7 +242,7 @@ def run_app(exp_class, exp_settings_class, manager_class, dataset_dict):
             except Exception, e:
                 print e
                 print "Can't read yaml file %s" % file_name
-                exit(1)
+                sys.exit(1)
             try:
                 if type(data["steps"]) is list:
                     data["steps"] = ",".join(data["steps"])
@@ -228,7 +251,7 @@ def run_app(exp_class, exp_settings_class, manager_class, dataset_dict):
                     if not data["data"] in dataset_items:
                         print "Wrong data parameter in yaml file."
                         print "Available values:", ",".join(dataset_items)
-                        exit(1)
+                        sys.exit(1)
                     data["start"] =  dataset_items.index(data["data"])
                     data["end"] = data["start"] + 1
                 if not "settings_context" in data:
@@ -249,7 +272,7 @@ def run_app(exp_class, exp_settings_class, manager_class, dataset_dict):
                 print "Necessary yaml fields: command (str), steps (list), start (int), end (int), dataset (str)"
                 print "Optional fields: data (str), settings_context (dict), project_context (dict)"
                 print "OR you may generate a yaml file with: 'yaml generate file_name' command"
-                exit(1)
+                sys.exit(1)
 
             execute(args,
                 usage, 
@@ -260,7 +283,7 @@ def run_app(exp_class, exp_settings_class, manager_class, dataset_dict):
             )
         else:
             print usage
-            exit(1)
+            sys.exit(1)
     elif len(args) == 3:
         if args[0] == "yaml" and args[1]=="generate":
             file_name = args[2]
