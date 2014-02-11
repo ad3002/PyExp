@@ -11,6 +11,7 @@ import time
 import random
 import urllib
 import simplejson
+from multiprocessing import Pool 
 
 STARTED = "Started"
 FINISHED = "Finished"
@@ -250,6 +251,7 @@ class AbstractExperiment(object):
                 print "Logget, start event", self.logger(self.pid, self.name, step.sid, step.name, STARTED)
             with Timer(step.name):
                 # save step output
+                result = None
                 if step.input is None:
                     result = step.cf(self.settings, self.project)
                 elif isinstance(step.input, dict):
@@ -270,17 +272,24 @@ class AbstractExperiment(object):
                     else:
                         self.settings[step.name] = result
             # post verification
-            self.check_step(step)
+            self.check_step(step, result)
             # send to server
             self.logger_update_project(self.project["pid"],
                             self.project)
+
+    def execute_parallel(self, start_sid=0, end_sid=None, project_context=None, threads=1):
+        '''
+        '''
+        pass
     
     ### Steps checking section ### 
 
-    def check_step(self, step):
+    def check_step(self, step, exe_result):
         if step.check_f is None:
             print "Verification for step %s is absent" % step.name
-            return None
+            self.project["status"][step.name] = exe_result
+            self.logger_update_status(self.project["pid"],  step.name, exe_result)
+            return exe_result
         if not "status" in self.project:
             self.project["status"] = {}
         if not step.name in self.project["status"]:
@@ -288,16 +297,19 @@ class AbstractExperiment(object):
         if step.check_f:
             if not hasattr(step.check_f, "__call__"):
                 print "Uncallable function for step %s" % step.name
-                return None
+                self.project["status"][step.name] = exe_result
+                self.logger_update_status(self.project["pid"],  step.name, exe_result)
+                return exe_result
             result = step.check_f(self.settings, self.project)
             if result is None:
                 print "Result for step %s is None" % step.name
-                result =None
             # send to server
             self.project["status"][step.name] = result
             self.logger_update_status(self.project["pid"],  step.name, result)
             return result
-        return None
+        self.project["status"][step.name] = exe_result
+        self.logger_update_status(self.project["pid"],  step.name, exe_result)
+        return exe_result
 
     def check_avalibale_steps(self):
         ''' Check all avaliable steps.
@@ -309,7 +321,7 @@ class AbstractExperiment(object):
                                      step["cf"], 
                                      check_f=step["check"], 
                                      check_p=step["pre"])
-            result = self.check_step(real_step)
+            result = self.check_step(real_step, None)
             print real_step.name, result
         # send to server
         self.logger_update_project(self.project["pid"],
@@ -326,7 +338,7 @@ class AbstractExperiment(object):
     def check_steps(self):
         steps = self.get_all_steps()
         for step in steps:
-            result = self.check_step(step)
+            result = self.check_step(step, None)
             print step.name, result
         # send to server
         self.logger_update_project(self.project["pid"],
@@ -387,6 +399,17 @@ class AbstractExperiment(object):
         }
         self._send_to_server(url, data)
 
+    def logger_send_project(self, pid, project):
+        if not "config" in self.settings or not "url_project_update" in self.settings["config"]:
+            print "To submit data to server set url_project_update in config file."
+            return
+        url = self.settings["config"]["url_project_update"]
+        project = simplejson.dumps(project)
+        data = {
+            'project': project,
+        }
+        self._send_to_server(url, data)
+
     def check_and_upload_project(self):
         if not "status" in self.project:
             self.project["status"] = {}
@@ -394,7 +417,7 @@ class AbstractExperiment(object):
         for step in steps:
             if not step["name"] in self.project["status"]:
                 self.project["status"][step["name"]] = None
-                self.check_step(step)
+                self.check_step(step, None)
         self.logger_update_project(self.project["pid"],
                         self.project)
 
