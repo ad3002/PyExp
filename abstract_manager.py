@@ -113,7 +113,7 @@ class ProjectManager(object):
         print "Can't find %s" % file_path
         return False
 
-    def get_project(self, pid, settings_context=None, project_context=None):
+    def get_project(self, pid, settings_context=None, project_context=None, path_replacing=None):
         """ Get project data by pid. You can change settings and project fields according to given contexts.
         """
         if not self._check_pid(pid):
@@ -121,6 +121,11 @@ class ProjectManager(object):
         file_path = os.path.join(self.projects_folder, "%s.yaml" % pid)
         with open(file_path, "r") as fh:
             project_data = yaml.load(fh)
+        if path_replacing:
+            path_from = path_replacing[1]
+            path_to = path_replacing[2]
+            if "path_to" in project_data:
+                project_data["path_to"] = project_data["path_to"].replace(path_from, path_to)
         settings = self._fix_paths(project_data)
         if settings_context:
             for k, v in settings_context.items():
