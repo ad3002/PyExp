@@ -3,4 +3,6 @@
 /.pydevproject
 .settings
 .settings/*.*
-_build
+_build
+/build/
+/PyExp.egg-info/
