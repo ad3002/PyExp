@@ -55,7 +55,7 @@ with Timer(name="Step name"):
 
 '''
 >>> Started: [step_name]...
->>> Finished: [step_name] elepase: [time]
+>>> Finished: [step_name] elapsed: [time]
 '''
 ```
 
