@@ -17,7 +17,7 @@ def _create_projects(exp_settings_class, manager_class, all_projects):
         manager = manager_class(experiment_settings)
         try:
             project, settings = manager.get_project(pid)
-            manager.recheck_folders_and_params(pid, project)       
+            manager.recheck_folders_and_params(pid, project, project_data=project_data)       
             print "Project %s was added early" % pid
         except AttributeError, e:
             print "ERROR: please, check that all settings given as dictionaries, not sets!"
@@ -285,6 +285,7 @@ def run_app(exp_class, exp_settings_class, manager_class, dataset_dict):
             print usage
             sys.exit(1)
     elif len(args) == 3:
+     
         if args[0] == "yaml" and args[1]=="generate":
             file_name = args[2]
             data = {

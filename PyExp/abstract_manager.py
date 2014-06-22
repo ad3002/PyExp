@@ -89,9 +89,15 @@ class ProjectManager(object):
             self._init_data(project_data)
         self.save(pid, project_data)
 
-    def recheck_folders_and_params(self, pid, project_data):
-        self._init_data(project_data)
-        self.save(pid, project_data)
+    def recheck_folders_and_params(self, pid, project, project_data=None):
+        if not project_data:
+            project_data = {}
+        for key in project_data:
+            if not key in project:
+                print "\tadded", key
+                project[key] = project_data[key]
+        self._init_data(project)
+        self.save(pid, project)
 
     def _init_project(self, project_data):
         """ Add initial data to project data dictionary."""
