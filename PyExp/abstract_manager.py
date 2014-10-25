@@ -72,6 +72,7 @@ class ProjectManager(object):
         If the project exists then **ProjectManagerException** raised.
         """
         assert isinstance(project_data, dict)
+        self.force_folder_creation = force_folder_creation
         if not "path_to" in project_data:
             print "Please add path_to parameter to project"
             raise ProjectManagerException("Please add path_to parameter to project")
@@ -105,6 +106,10 @@ class ProjectManager(object):
 
     def _init_data(self, project):
         """ Init project data."""
+        project_folder = os.path.join(self.work_folder, project["path_to"])
+        if not os.path.isdir(project_folder):
+            manager_logger.info("Create folder %s" % project_folder)
+            os.makedirs(project_folder)
         for folder_name, folder_path in self.settings_class.folders.items():
             folder = os.path.join(self.work_folder, project["path_to"], folder_path)
             if not os.path.isdir(folder):
