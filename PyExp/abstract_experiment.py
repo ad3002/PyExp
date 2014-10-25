@@ -8,10 +8,13 @@
 Experiment abstraction.
 '''
 import time
+import os
 import random
 import urllib
 import simplejson
-from multiprocessing import Pool 
+from multiprocessing import Pool
+from logbook import Logger
+import subprocess
 
 STARTED = "Started"
 FINISHED = "Finished"
@@ -222,7 +225,7 @@ class AbstractExperiment(object):
         ''' Print sequence of added steps.'''
         steps = self.get_all_steps()
         for i, step in enumerate(steps):
-            print "Step %s: %s" % (i, str(step))
+            exp_logger.info("Step %s: %s" % (i, str(step)))
 
     def get_step(self, sid):
         """ Get step by sid."""
@@ -281,14 +284,14 @@ class AbstractExperiment(object):
                         self.project["status"] = None
                     status_p = self.project["status"][step.check_p]
                     if status_p != "OK":
-                        print "Previous step %s's status is %s" % (step.check_p, status_p)
+                        exp_logger.warning("Previous step %s's status is %s" % (step.check_p, status_p))
                         continue
                 # skip finished
-                if self.project["status"][step.name] == "OK":
-                        print "Skipped completed step: %s" % step.name
+                if step.name in self.project["status"]:
+                        exp_logger.warning("Skipped completed step: %s with status: %s" % (step.name, self.project["status"][step.name]))
                         continue
             if self.logger:
-                print "Logget, start event", self.logger(self.pid, self.name, step.sid, step.name, STARTED)
+                exp_logger.info("Logger, start event", self.logger(self.pid, self.name, step.sid, step.name, STARTED))
             with Timer(step.name):
                 # save step output
                 result = None
@@ -301,7 +304,7 @@ class AbstractExperiment(object):
                 else:
                     result = step.cf(self.settings, self.project, step.input)
                 if self.logger:
-                    print "Logget, finish event", self.logger(self.pid, self.name, step.sid, step.name, FINISHED)
+                    exp_logger.info("Logget, finish event", self.logger(self.pid, self.name, step.sid, step.name, FINISHED))
                 # save step output
                 if step.save_output:
                     if result is None:
@@ -326,7 +329,7 @@ class AbstractExperiment(object):
 
     def check_step(self, step, exe_result):
         if step.check_f is None:
-            print "Verification for step %s is absent" % step.name
+            exp_logger.warning("Verification for step %s is absent" % step.name)
             self.project["status"][step.name] = exe_result
             self.logger_update_status(self.project["pid"],  step.name, exe_result)
             return exe_result
@@ -336,13 +339,13 @@ class AbstractExperiment(object):
             self.project["status"][step.name] = None
         if step.check_f:
             if not hasattr(step.check_f, "__call__"):
-                print "Uncallable function for step %s" % step.name
+                exp_logger.warning("Uncallable function for step %s" % step.name)
                 self.project["status"][step.name] = exe_result
                 self.logger_update_status(self.project["pid"],  step.name, exe_result)
                 return exe_result
             result = step.check_f(self.settings, self.project)
             if result is None:
-                print "Result for step %s is None" % step.name
+                exp_logger.info("Result for step %s is None" % step.name)
             # send to server
             self.project["status"][step.name] = result
             self.logger_update_status(self.project["pid"],  step.name, result)
@@ -362,7 +365,7 @@ class AbstractExperiment(object):
                                      check_f=step["check"], 
                                      check_p=step["pre"])
             result = self.check_step(real_step, None)
-            print real_step.name, result
+            exp_logger.info("%s\t%s" % (real_step.name, result))
         # send to server
         self.logger_update_project(self.project["pid"],
                         self.project)
@@ -379,7 +382,7 @@ class AbstractExperiment(object):
         steps = self.get_all_steps()
         for step in steps:
             result = self.check_step(step, None)
-            print step.name, result
+            exp_logger.info("%s\t%s" % (step.name, result))
         # send to server
         self.logger_update_project(self.project["pid"],
                         self.project)
