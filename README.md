@@ -5,6 +5,8 @@
 - [Introduction](#_intro)
 - [Timer class](#_timer)
 - [Step class](#_step)
+- [Log wrapper](#_logger)
+- [System command wrapper](#_runner)
 - [Experiment settings class](#_exp_settings)
 - [Experiment class](#_exp)
     - [Attributes](#_exp_attr)
@@ -28,9 +30,9 @@
 <a name="_intro"/>
 ## Introduction
 
-A data analysis workflow frequently consists of a sequence of steps applied to datasets. The purpose of TinyExp simplify fast creation and execution of such workflows. There are many complex tools like Taverna or Galaxy but lack of tolls for simple execution of series of data processing steps. TinyExp uses YAML files for keeping data and experiments settings. A preferable way to keep datasets is a tab delimited files. Each workflow steps can be extended with precondition, postcondition and checking functions. Execution status can be submitted to external webserver.
+A data analysis workflow frequently consists of a sequence of steps applied to datasets. The purpose of PyExp simplify fast creation and execution of workflows like this. There are many complex tools like Taverna or Galaxy but lack of tools for simple execution of series of data processing steps. PyExp uses YAML files for keeping data and experiments settings. A preferable way to keep datasets is a tab delimited files. Each workflow steps can be extended with precondition, postcondition and checking functions. Computation results can be submitted to external webserver.
 
-TinyExp includes four compoments:
+PyExp includes four compoments:
 
 - A class for fast model description.
 - A class for experiment manager.
@@ -89,6 +91,12 @@ print step
 print step.get_as_dict().keys()
 >>> ['name', 'cf', 'check', 'pre', 'save_output']
 ```
+
+<a name="_logger"/>
+## Log wrapper
+
+<a name="_runner"/>
+## System command wrapper
 
 <a name="_exp_settings"/>
 ## Experiment settings
