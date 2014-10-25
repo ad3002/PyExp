@@ -8,6 +8,10 @@
 import os
 import yaml
 import platform
+from logbook import Logger
+
+manager_logger = Logger('Manager logger')
+
 
 class ProjectManagerException(Exception):
     """ Simple exceptions class for project manager."""
@@ -32,6 +36,7 @@ class ProjectManager(object):
         self.work_folder = self.config["path_work_folder"]
         self.settings_class = settings_class
         self.settings_class.config = self.config
+        self.force_folder_creation = False
         if self.projects_folder and not os.path.isdir(self.projects_folder):
             os.makedirs(self.projects_folder)
         if self.work_folder and not os.path.isdir(self.work_folder):
@@ -45,15 +50,15 @@ class ProjectManager(object):
         elif self.os == "Darwin":
             file_path = "../config.mac.yaml"
         else:
-            file_path = os.path.join("/root/Dropbox/workspace/PySatDNA", "config.yaml")
+            file_path = os.path.expanduser("~/Dropbox/workspace/PySatDNA/config.yaml")
             if not os.path.isfile(file_path):
                 file_path = os.path.expanduser("~/Dropbox/PySatDNA/config.dobi.yaml")
         try:
             with open(file_path) as fh:
                 self.config = yaml.load(fh)
         except Exception, e:
-            print "ERROR: Check settings,", e
-            print "Loading default settings"
+            manager_logger.error("ERROR: Check settings, %s" % e)
+            manager_logger.warning("Loading default settings")
             self.config = {
                 'path_work_folder': 'data',
                 'path_workspace_folder': '../..',
@@ -74,7 +79,7 @@ class ProjectManager(object):
         assert isinstance(project_data, dict)
         self.force_folder_creation = force_folder_creation
         if not "path_to" in project_data:
-            print "Please add path_to parameter to project"
+            manager_logger.error("Please add path_to parameter to project")
             raise ProjectManagerException("Please add path_to parameter to project")
         # check pid existence
         if force:
@@ -112,8 +117,8 @@ class ProjectManager(object):
             os.makedirs(project_folder)
         for folder_name, folder_path in self.settings_class.folders.items():
             folder = os.path.join(self.work_folder, project["path_to"], folder_path)
-            if not os.path.isdir(folder):
-                print "Create folder %s ..." % folder
+            if not os.path.isdir(folder) and self.force_folder_creation:
+                manager_logger.info("Create folder %s" % folder)
                 os.makedirs(folder)
 
     def _check_pid(self, pid):
@@ -121,7 +126,7 @@ class ProjectManager(object):
         file_path = os.path.join(self.projects_folder, "%s.yaml" % pid)
         if os.path.isfile(file_path):
             return True
-        print "Can't find %s" % file_path
+        manager_logger.warning("Can't find %s" % file_path)
         return False
 
     def get_project(self, pid, settings_context=None, project_context=None, path_replacing=None):
