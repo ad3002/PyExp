@@ -60,7 +60,7 @@ class ProjectManager(object):
                 'projects_folder': 'projects',
             }
             
-    def add_project(self, pid, project_data, init=False, force=False):
+    def add_project(self, pid, project_data, init=False, force=False, force_folder_creation=False):
         """ Add project to manager.
               
         Arguments:
