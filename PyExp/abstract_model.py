@@ -67,7 +67,10 @@ class AbstractModel(object):
                 if data is None:
                     data = []
                 data = ",".join([str(x) for x in data])
-            result.append(str(data).strip())
+            try:
+                result.append(str(data).strip())
+            except UnicodeEncodeError:
+                result.append(unicode(data).strip())
         result = "%s\n" % "\t".join(result)
         return result
 
