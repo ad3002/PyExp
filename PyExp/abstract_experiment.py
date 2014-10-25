@@ -16,6 +16,44 @@ from multiprocessing import Pool
 STARTED = "Started"
 FINISHED = "Finished"
 
+timer_logger = Logger('timer logger')
+exp_logger = Logger('exp logger')
+core_logger = Logger('core logger')
+runner_logger = Logger('run logger')
+trseeker_logger = Logger('trseeker')
+
+class ProcessRunner(object):
+    '''
+    '''
+    def __init__(self):
+        pass
+
+    def run(self, command):
+        '''
+        '''
+        runner_logger.info(command)
+        os.system(command)
+        # returncode = subprocess.call()
+        # if returncode == "ERROR":
+        #     # log error
+        #     # set error status for step
+        #     # abort batch
+        #     pass
+        # elif returncode == "OK":
+        #     # log error
+        #     # set error status for step
+        #     # abort batch
+        #     pass
+
+    def run_batch(self, commands):
+        '''
+        '''
+        for command in commands:
+            self.run(command)
+
+runner = ProcessRunner()
+
+
 class Timer(object):
     '''
     Timer wrapper for code blocks.
