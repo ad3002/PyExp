@@ -70,18 +70,20 @@ class Timer(object):
     def __init__(self, name=None):
         self.name = name
         if self.name:
-            print 'Started: [%s]...' % self.name
+            timer_logger.info('Started: [%s]...' % self.name)
 
     def __enter__(self):
         self.timer_start = time.time()
 
     def __exit__(self, type, value, traceback):
+        message = ''
         if self.name:
-            print 'Finished: [%s]' % self.name,
+            message = 'Finished: [%s]' % self.name
         delta = time.time() - self.timer_start
         minutes = int(delta) / 60
         seconds =int(delta) % 60
-        print ' elapsed: %s min %s sec ' % (minutes, seconds)
+        message += ' elapsed: %s min %s sec ' % (minutes, seconds)
+        timer_logger.info(message)
 
 class AbstractStep(object):
     ''' Abstract step for exepriment is described by step name, input value,
