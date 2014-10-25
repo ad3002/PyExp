@@ -8,6 +8,10 @@ import sys
 import shutil
 import yaml
 from abstract_experiment import AbstractStep
+from abstract_manager import ProjectManagerException
+from logbook import Logger
+
+app_logger = Logger('App logger')
 
 def _create_projects(exp_settings_class, manager_class, all_projects):
     ''' Init project data and settings.
@@ -15,16 +19,17 @@ def _create_projects(exp_settings_class, manager_class, all_projects):
     for pid, project_data in all_projects:
         experiment_settings = exp_settings_class()
         manager = manager_class(experiment_settings)
-        try:
+        try:    
             project, settings = manager.get_project(pid)
             manager.recheck_folders_and_params(pid, project, project_data=project_data)       
-            print "Project %s was added early" % pid
+            app_logger.warning("Project %s was added early" % pid)
         except AttributeError, e:
-            print "ERROR: please, check that all settings given as dictionaries, not sets!"
-        except Exception, e:
-            print "Something wrong:", e
+            app_logger.error("ERROR: please, check that all settings given as dictionaries, not sets. (%s)" % e)
+            raise Exception(e)
+        except ProjectManagerException, e:
             manager.add_project(pid, project_data, init=True)
-            print "Project %s added" % pid
+            app_logger.info("Project %s added" % pid)
+
 
 def execute(args, usage, dataset_dict, exp_settings, exp_class, manager_class):
     ''' Execute experiment with givent args.
