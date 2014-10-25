@@ -8,7 +8,7 @@
     :license: BSD, see LICENSE for more details.
 """
 
-__version__ = '0.3.1'
+__version__ = '0.5.2'
 
 from .abstract_experiment import Timer
 from .abstract_experiment import AbstractStep
