@@ -619,7 +619,7 @@ class AbstractExperiment(object):
     def _send_to_server(self, url, data, force=False):
         """
         """
-        if not force and not self.send_to_server:
+        if not force and self.send_to_server is None:
             return
         if not force and self._skip_server_part:
             exp_logger.info("Server part is skipped!")
