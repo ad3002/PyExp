@@ -226,13 +226,66 @@ class AnnotationExperiment(AbstractExperiment):
         ]
 ```
 
+Also you should create ExperimantSettings class and ProjectManager classes:
+
+```python
+class ExperimentSettings(AbstractExperimentSettings):
+    ''' ExperimentSettings class.
+    '''
+    def __init__(self):
+      super(ExperimentSettings, self).__init__()
+
+      self.folders = {...}
+      self.files = {...}
+      self.other = {...}
+
+class SomeProjectManager(ProjectManager):
+    """ Class for projects about something.
+    """
+    
+    def _init_project(self, project_data):
+        """Add initial data to project data dictionary."""
+
+        mandatory_params = ["path_to",
+                            "pid",
+                            ]
+
+        project = {}
+        for param in mandatory_params:
+            if not param in project_data:
+                raise ProjectManagerException("Add '%s' parameter to project data" % param)
+            setattr(self, param, project_data[param])
+            project[param] = project_data[param]
+        for key in project_data:
+            project[key] = project_data[key]
+        return project
+```
+
 
 <a name="_exp_init"/>
 ### Experiment initiation:
 
 ```python
+
+pid = "some_pid"
+
+manager = SomeProjectManager()
+
 project, settings = manager.get_project(pid)
-exp = AbstractExperiment(settings, project, name=None, force=False, logger=None, manager=None, send_to_server=None)
+
+exp = AbstractExperiment(settings, project, name=None, force=False, logger=None, manager=manager, send_to_server=None)
+```
+
+Or you can use run_app function (see below):
+
+```python
+exp_settings_class = ExperimentSettings
+exp_class = AnnotationExperiment
+manager_class = SomeProjectManager 
+
+dataset_dicts = {...}
+
+run_app(exp_class, exp_settings_class, manager_class, dataset_dicts)
 ```
 
 <a name="_exp_init_params"/>
