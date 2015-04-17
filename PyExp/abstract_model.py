@@ -74,6 +74,26 @@ class AbstractModel(object):
         result = "%s\n" % "\t".join(result)
         return result
 
+    def print_human_friednly(self):
+        """ Print human friendly string representation with fields
+            defined in dumpable_attributes."""
+        self.preprocess_data()
+        result = []
+        largest_name_length = max([len(x) for x in self.dumpable_attributes])
+        print_string = "{0:%s} => {1}" % largest_name_length
+        for attr in self.dumpable_attributes:
+            data = getattr(self, attr)
+            if attr in self.list_attributes:
+                if data is None:
+                    data = []
+                data = ",".join([str(x) for x in data])
+            try:
+                print print_string.format(attr, data.strip())
+            except UnicodeEncodeError:
+                data = unicode(data).strip()
+                result.append()
+                print print_string.format(attr, data.strip())
+
     def get_as_string(self, dumpable_attributes):
         """ Get string representation with fields
             defined in dumpable_attributes."""
@@ -129,6 +149,11 @@ class AbstractModel(object):
                 value = [self.list_attributes_types[key](x) for x in value]
             setattr(self, key, value)
 
+    def as_dict(self):
+        """
+        """
+        return self.get_as_dict()
+
     def get_as_dict(self):
         """ Get dictionary representation with fields
             defined in dumpable_attributes """
@@ -141,6 +166,7 @@ class AbstractModel(object):
     def get_as_json(self, preprocess_func=None):
         """ Return JSON representation.
         """
+        self.preprocess_data()
         d = self.get_as_dict()
         if preprocess_func:
             d = preprocess_func(d)
@@ -154,4 +180,10 @@ class AbstractModel(object):
         """ Any data preprocessing before initiation from dictionary.
         """
         return key, value
+
+    def __getitem__(self, key):
+        return getattr(self, key)
+
+    def __setitem__(self, key, value):
+        return setattr(self, key, value)
 
