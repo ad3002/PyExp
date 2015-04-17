@@ -558,13 +558,22 @@ In model defined __setitem__ and __getitem__ so you can access them both as dict
 <a name="_readers"/>
 ## IO simplification classes 
 
-Includes three classes:
+Includes classes:
 
+- WiseOpener()
 - AbstractFileIO()
 - AbstractFolderIO()
 - AbstractFoldersIO()
 
 <a name="_readers_archives"/>
+### Opener to open usual files and gzip or bzip archives.
+
+Usage:
+
+```python
+with WiseOpener(any_file) as fh:
+    data = fh.read()
+```
 
 <a name="_readers_files"/>
 ### Working with files
