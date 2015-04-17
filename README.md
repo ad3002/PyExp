@@ -542,7 +542,7 @@ model_dict = model.as_dict()
 Or as human friendly:
 
 ```python
-model.print_human_friednly()
+model.print_human_friendly()
 ```
 
 In JSON format with optional preprosessing by preprocess_func:
