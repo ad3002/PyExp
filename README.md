@@ -635,3 +635,69 @@ from PyExp.readers.abstract_reader import *
 <a name="_app"/>
 ## App functions
 
+To run experiment execution you can use:
+```python
+from PyExp import run_app
+
+run_app(exp_class, exp_settings_class, manager_class, dataset_dict)
+```
+
+### Available scenaries:
+
+Create and init all projects from dataset:
+
+```bash
+python experiment.py create dataset_name
+```
+
+Show available projects in dataset:
+
+```bash
+python experiment.py show dataset_name
+```
+
+Run with custom yaml script:
+
+```bash
+python experiment.py yaml yaml_path
+```
+
+Yaml content:
+
+```yaml
+command: force
+steps:
+  - step1
+  - step2
+  - step3
+start: 0
+end: 2
+dataset: dataset_name
+settings_context: <dict>
+project_context: <dict>
+```
+
+Your can generate yaml:
+
+```bash
+python experiment.py yaml generate yaml_file
+```
+
+Usual usage
+```bash
+python experiment.py run step dataset_name
+# or
+python experiment.py check step dataset_name
+# or
+python experiment.py force step dataset_name
+```
+
+Or you can execute for project slice from dataset:
+
+```bash
+# check ids
+python experiment.py show dataset_name
+# and then
+python experiment.py force step1 2 6 dataset_name
+```
+

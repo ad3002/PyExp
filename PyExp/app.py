@@ -5,6 +5,8 @@
 #@author: Aleksey Komissarov
 #@contact: ad3002@gmail.com 
 import sys
+import os
+import re
 import shutil
 import yaml
 from abstract_experiment import AbstractStep
@@ -21,7 +23,10 @@ def _create_projects(exp_settings_class, manager_class, all_projects):
         manager = manager_class(experiment_settings)
         try:    
             project, settings = manager.get_project(pid)
-            manager.recheck_folders_and_params(pid, project, project_data=project_data)       
+            try:
+                manager.recheck_folders_and_params(pid, project, project_data=project_data)       
+            except OSError, e:
+                app_logger.error("OSError: %s" % e)
             app_logger.warning("Project %s was added early" % pid)
         except AttributeError, e:
             app_logger.error("ERROR: please, check that all settings given as dictionaries, not sets. (%s)" % e)
@@ -119,7 +124,7 @@ def add_step(exp, task, manager, pid):
     if not s:
         print "Unknown step name:", task
         print "Avaliable steps: " 
-        for x in exp.get_avaliable_steps():
+        for x in exp.get_available_steps():
             print x["name"]
         sys.exit(0)
     if "manager" in s and s["manager"]:
@@ -132,10 +137,13 @@ def add_step(exp, task, manager, pid):
     pre =None
     if "pre" in  s:
         pre = s["pre"]
+    check_value = None
+    if "check_value" in  s:
+        check_value = s["check_value"]
     if input:
-        step = AbstractStep(s["name"], input, s["cf"], save_output=False, check_f=check, check_p=pre)
+        step = AbstractStep(s["name"], input, s["cf"], save_output=False, check_f=check, check_p=pre, check_value=check_value)
     else:
-        step = AbstractStep(s["name"], None, s["cf"], save_output=False, check_f=check, check_p=pre)
+        step = AbstractStep(s["name"], None, s["cf"], save_output=False, check_f=check, check_p=pre, check_value=check_value)
     exp.add_step(step)
     
 def execute_task(dataset_gen, 
@@ -223,6 +231,7 @@ def run_app(exp_class, exp_settings_class, manager_class, dataset_dict):
                       )
 
     args = sys.argv[1:]
+    
     if len(args) == 2:
         if args[0] == "create":
             if args[1] in dataset_dict:
@@ -290,6 +299,22 @@ def run_app(exp_class, exp_settings_class, manager_class, dataset_dict):
             print usage
             sys.exit(1)
     elif len(args) == 3:
+
+        if args[0] in ["run", "check", "force"]:
+            i, dataset  = manager_class.get_id_by_pid(args[2], dataset_dict)
+            if dataset == None:
+                # app_logger.error("Available pids: %s" % (str(manager_class.get_all_projects())))
+                raise Exception("PID %s not found" % args[2])
+            args[2] = i
+            args.append(i + 1)
+            args.append(dataset)
+            execute(args,
+                usage, 
+                dataset_dict, 
+                exp_settings_class, 
+                exp_class, 
+                manager_class
+           )
      
         if args[0] == "yaml" and args[1]=="generate":
             file_name = args[2]
