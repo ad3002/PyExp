@@ -120,8 +120,8 @@ Every step has following properties:
 - **cf**, a function
 - **save_output** flag, default False
 - **check_f**, function that check status of the step after execution, default is None
-- **check_p**, name of step that cab be successfully executed (it has status OK) before this step, default is None
-- **check_value**, output value from the step that will be checked in project statues
+- **check_p**, name of step that should be successfully executed (has status OK or value of check_p) before this step, default is None
+- **check_value**, output value from the step that will be checked with check_p
 
 Step initiation:
 
@@ -193,7 +193,7 @@ Each subclass of AbstractExperimentSettings must have three dictionaries (files,
 - **settings["experiment"]**, a link to experiment instance
 
 <a name="_exp_create"/>
-### How to create new experiment 
+### How to create a new experiment 
 
 To create an experiment you should add self.all_steps list with step dictionaries in self.init_steps() method.
 
@@ -297,9 +297,23 @@ run_app(exp_class, exp_settings_class, manager_class, dataset_dicts)
 - **logger**, function for logging, default None
 - **force**, skip prerequisite checking for steps, default False
 - **manager**, project manager object, default None
+- **send_to_server**, communicate with server during execution, default None
 
 To initiate available step you must add to subclass init_steps() method with list of steps.
 
+<a name="_exp_steps"/>
+### Avaliable methods related to steps management:
+
+- exp.add_step(step), add step with assigned sid (step_id)
+- exp.get_all_steps(), returns list of step objects
+- exp.get_available_steps(), returns registered steps
+- exp.print_steps(), prints "Step [sid]: [string representation of step]" for each step
+- exp.get_step(sid), returns step or None
+- exp.find_step(step_name), returns step dict or None
+- exp.find_steps_by_stage(stege), returns steps dict or None
+- exp.remove_step(sid)
+- exp.change_step(sid, new_step)
+- exp.get_as_dict(), returns {'name':..., 'steps': [s.as_dict(),...]}
 
 <a name="_exp_exe"/>
 ### Experiment executin order:
@@ -325,47 +339,21 @@ An experiment class executes each added steps with following logic:
 9. Check current step status with self.check_step(step) method.
 10. Save project to yaml file.
 
-<a name="_exp_logger"/>
-### Logger function example:
 
-	logger_func(pid, exp_name, step_sid, step_name, status)
-
-Upload step status to self.settings["config"]["url_status_update"]:
-
-	exp.logger_update_status(pid, step_name, status)
-	
-Save project data and upload project to self.settings"config"]["url_project_update"]:
-
-	exp.logger_update_project(pid, project)
-	
-Check all steps and upload project:
-
-	exp.check_and_upload_project()
-
-<a name="_exp_steps"/>
-### Avaliable methods related to steps management:
-
-- exp.add_step(step), add step with assigned sid (step_id)
-- exp.get_all_steps(), returns list of step objects
-- exp.get_avaliable_steps(), returns registered steps
-- exp.print_steps(), prints "Step [sid]: [string representation of step]" for each step
-- exp.get_step(sid), returns step or None
-- exp.find_step(step_name), returns step dict or None
-- exp.find_steps_by_stage(stege), returns steps dict or None
-- exp.remove_step(sid)
-- exp.change_step(sid, new_step)
-- exp.get_as_dict(), returns {'name':..., 'steps': [s.as_dict(),...]}
 
 <a name="_exp_check"/>
 ### Methods related to step checking
 
+There is an additional verification with step.check_f function if it is provided for the step, otherwise step returns value will be saved in project["status"][step.name] variable, step.check_f should be usual core function that takes settings, project arguments and returns some value that be saved in project["status"][step.name] variable. After each step check logger_update_project is called, so you can update server value with it if send_to_server is True.
+
 Check step and returns None or result of checking:
 
 ```python
-exp.check_step(step)
+exe_result = None
+exp.check_step(step, exe_result)
 ```
 
-Check all  avaliable steps with exp.check_step(step) and update project:
+Check **ALL** available steps with exp.check_step(step) and update project:
 
 ```python
 exp.check_avalibale_steps()
@@ -377,7 +365,7 @@ Set all step's statuses to None:
 exp.reset_avaliable_steps()
 ```
 
-Check added steps:
+Check **only** added steps:
 
 ```python
 exp.check_steps()
@@ -386,9 +374,26 @@ exp.check_steps()
 <a name="_exp_settings"/>
 ### Methods related to settings
 
-- exp.clear_settings()
+- exp.clear_settings(), set settings to None
 - exp.get_settings()
-- exp.remove_project_data
+- exp.remove_project_data, remove all project's files and folders listed in settings
+
+<a name="_exp_logger"/>
+### Logger function example:
+
+    logger_func(pid, exp_name, step_sid, step_name, status)
+
+Upload step status to self.settings["config"]["url_status_update"]:
+
+    exp.logger_update_status(pid, step_name, status)
+    
+Save project data and upload project to self.settings"config"]["url_project_update"]:
+
+    exp.logger_update_project(pid, project)
+    
+Check all steps and upload project:
+
+    exp.check_and_upload_project()
 
 <a name="_manager"/>
 ## Experiment manager
