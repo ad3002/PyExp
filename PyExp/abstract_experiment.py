@@ -33,8 +33,9 @@ class ProcessRunner(object):
     def run(self, command, log_file=None, verbose=True):
         """
         Run command in shell.
-        :param log_file: name of log file for appending executed command.
-        :param command: command or list ot  commands for shell
+        :param command: one command or list ot  commands for shell
+        :param log_file: name of log file for appending executed command, default=None
+        :param verbose: echo command with logger, default=True
         """
         if isinstance(command, list):
             return self.run_batch(command)
@@ -57,6 +58,7 @@ class ProcessRunner(object):
         """
         Run commands in parallel with subprocess.Popen
         :param commands: list of commands for shell
+        :param mock: don't run command
         """
         ps = set()
         if not isinstance(commands, list):
@@ -78,6 +80,8 @@ class ProcessRunner(object):
         """
         Run large number of commands in parallel with subprocess.Popen
         :param commands: list of commands for shell
+        :param cpu: number of cpu
+        :param mock: don't run command
         """
         if not isinstance(commands, list):
             message = "Expected list get %s" % str(commands)

@@ -4,6 +4,7 @@
 
 - [Introduction](#_intro)
 - [Timer class](#_timer)
+- [Runner class](#_runner)
 - [Step class](#_step)
 - [Log wrapper](#_logger)
 - [System command wrapper](#_runner)
@@ -39,6 +40,7 @@ PyExp includes four compoments:
 - A class for experiment managing.
 - A class for workflow description as a sequence of steps.
 - And a class for simplified data IO.
+- A class for running command line tools.
 
 The data for the experiment consists of two parts:
 
@@ -48,7 +50,7 @@ The data for the experiment consists of two parts:
 <a name="_timer"/>
 ## Timer class
 
-This class provides a wrapper for measure time of execution.
+Timer class provides a wrapper for measuring execution time for a code fragment.
 
 Usage:
 
@@ -61,6 +63,52 @@ with Timer(name="Step name"):
 >>> Finished: [step_name] elapsed: [time]
 '''
 ```
+
+<a name="_runner"/>
+## Process runner class
+
+Runner class provides a wrapper for runnig command line tools one by one or in parallel.
+
+Usage:
+
+```python
+
+from PyExp import runner
+
+command = "ls"
+commands = [
+    "ls",
+    "pwd",
+]
+
+runner.run(command, log_file=None, verbose=True)
+# or with list of commands then it runs run_batch(...)
+runner.run(commands)
+
+runner.run_batch(commands)
+```
+
+Or you can run all commands in parallel:
+
+```python
+
+runner.run_parallel_no_output(commands, mock=False)
+```
+
+Or you can run all commands with queue in parallel:
+
+```python
+
+runner.run_asap(commands, cpu=10, mock=False)
+```
+
+If you need output from command then use popen:
+
+```python
+
+output, error = runner.popen(command, silent=False)
+```
+
 
 <a name="_step"/>
 ## Class for step descripion
