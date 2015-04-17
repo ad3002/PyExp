@@ -22,6 +22,7 @@
     - [Get project](#_manager_get_project)
 - [Data models](#_models)
 - [IO helpers](#_readers)
+    - [Working with gziped files](#_readers_archives)
     - [Working with files](#_readers_files)
     - [Working with folders](#_readers_folders)
     - [Working with nested folders](#_readers_folder_folders)
@@ -30,19 +31,19 @@
 <a name="_intro"/>
 ## Introduction
 
-A data analysis workflow frequently consists of a sequence of steps applied to datasets. The purpose of PyExp simplify fast creation and execution of workflows like this. There are many complex tools like Taverna or Galaxy but lack of tools for simple execution of series of data processing steps. PyExp uses YAML files for keeping data and experiments settings. A preferable way to keep datasets is a tab delimited files. Each workflow steps can be extended with precondition, postcondition and checking functions. Computation results can be submitted to external webserver.
+A data analysis workflow frequently consists of a sequence of steps applied to datasets. The purpose of PyExp is to simplify fast creation and execution of such workflows. There are many complex tools like Taverna or Galaxy but lack of tools for simple execution of series of data processing steps. PyExp uses YAML files for keeping data and experiments settings. A preferable way to keep datasets is a tab delimited files. Each workflow steps can be extended with precondition, postcondition and checking functions. Computation results can be submitted to external webserver or MongoDB database.
 
 PyExp includes four compoments:
 
 - A class for fast model description.
-- A class for experiment manager.
+- A class for experiment managing.
 - A class for workflow description as a sequence of steps.
 - And a class for simplified data IO.
 
 The data for the experiment consists of two parts:
 
-- Data common to all projects to be implemented in this experiment. For example, names of files or directories
-- The project data.
+- Data common to all projects to be running in the given experiment. For example, names of files or directories
+- The project-specific data.
 
 <a name="_timer"/>
 ## Timer class
@@ -360,6 +361,8 @@ Includes three classes:
 - AbstractFileIO()
 - AbstractFolderIO()
 - AbstractFoldersIO()
+
+<a name="_readers_archives"/>
 
 <a name="_readers_files"/>
 ### Working with files
