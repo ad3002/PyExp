@@ -4,21 +4,26 @@
 #@created: 05.06.2011
 #@author: Aleksey Komissarov
 #@contact: ad3002@gmail.com 
-
+''' Code related to ProjectManager.
+'''
 import os
 import yaml
 import platform
 from logbook import Logger
+
 
 manager_logger = Logger('Manager logger')
 
 
 class ProjectManagerException(Exception):
     """ Simple exceptions class for project manager."""
+
     def __init__(self, value):
         self.value = value
+    
     def __str__(self):
         return repr(self.value)
+
 
 class ProjectManager(object):
     """ Class for controlling project's settings.
@@ -26,12 +31,15 @@ class ProjectManager(object):
     for some data transformation.
     Each project is yaml file with settings. 
     Project PID is a yaml file name.
-
     """
 
-    def __init__(self, settings_class):
-        """ Init projects_folder. """
-        self.load_config()
+    def __init__(self, settings_class, config_path=None):
+        """ Init projects_folder. 
+        Manager loads settings from default location in PySatDNA root or from given config_path.
+        Then create work and projects folders if they were not found.
+        And set config values for settings class.
+        """
+        self.load_config(config_path)
         self.projects_folder = self.config["projects_folder"]
         self.work_folder = self.config["path_work_folder"]
         self.settings_class = settings_class
@@ -42,17 +50,24 @@ class ProjectManager(object):
         if self.work_folder and not os.path.isdir(self.work_folder):
             os.makedirs(self.work_folder)
 
-    def load_config(self):
+    def load_config(self, config_path):
         ''' Load OS-specific configs.'''
-        self.os = platform.system()
-        if self.os == "Windows":
-            file_path = "../config.win.yaml"
-        elif self.os == "Darwin":
-            file_path = "../config.mac.yaml"
-        else:
-            file_path = os.path.expanduser("~/Dropbox/workspace/PySatDNA/config.yaml")
+        if config_path:
+            file_path = config_path
             if not os.path.isfile(file_path):
-                file_path = os.path.expanduser("~/Dropbox/PySatDNA/config.dobi.yaml")
+                message = "ERROR: Check settings, %s" % e
+                manager_logger.error(message)
+                raise ProjectManagerException(message)
+        else:      
+            self.os = platform.system()
+            if self.os == "Windows":
+                file_path = "../config.win.yaml"
+            elif self.os == "Darwin":
+                file_path = "../config.mac.yaml"
+            else:
+                file_path = os.path.expanduser("~/Dropbox/workspace/PySatDNA/config.yaml")
+                if not os.path.isfile(file_path):
+                    file_path = os.path.expanduser("~/Dropbox/PySatDNA/config.dobi.yaml")
         try:
             with open(file_path) as fh:
                 self.config = yaml.load(fh)
@@ -67,12 +82,13 @@ class ProjectManager(object):
             
     def add_project(self, pid, project_data, init=False, force=False, force_folder_creation=False):
         """ Add project to manager.
-              
         Arguments:
 
         - *pid* project ID, usually with meta project prefix
         - *project_data* a dict with project initial settings
         - *init* true/false, default false.
+        - *force* true/false, default false. remove existing yaml file.
+        - *force_folder_creation* create or not all possible folders
 
         If the project exists then **ProjectManagerException** raised.
         """
@@ -95,15 +111,13 @@ class ProjectManager(object):
             self._init_data(project_data)
         self.save(pid, project_data)
 
-    def recheck_folders_and_params(self, pid, project, project_data=None):
-        if not project_data:
-            project_data = {}
-        for key in project_data:
-            if not key in project:
-                print "\tadded", key
-                project[key] = project_data[key]
-        self._init_data(project)
-        self.save(pid, project)
+    def _check_pid(self, pid):
+        """ Check project existance."""
+        file_path = os.path.join(self.projects_folder, "%s.yaml" % pid)
+        if os.path.isfile(file_path):
+            return True
+        manager_logger.warning("Can't find %s" % file_path)
+        return False
 
     def _init_project(self, project_data):
         """ Add initial data to project data dictionary."""
@@ -121,13 +135,43 @@ class ProjectManager(object):
                 manager_logger.info("Create folder %s" % folder)
                 os.makedirs(folder)
 
-    def _check_pid(self, pid):
-        """ Check project existance."""
-        file_path = os.path.join(self.projects_folder, "%s.yaml" % pid)
-        if os.path.isfile(file_path):
-            return True
-        manager_logger.warning("Can't find %s" % file_path)
-        return False
+    def _deepupdate(self, original, update):
+        """
+        Recursively update a dict.
+        Subdict's won't be overwritten but also updated.
+        From http://stackoverflow.com/a/8310229/385489
+        """
+        for key, value in original.iteritems(): 
+            if not key in update:
+                update[key] = value
+            elif isinstance(value, dict):
+                self._deepupdate(value, update[key]) 
+        return update
+
+    def save(self, pid, project_data):
+        """ Save project data to yaml project file. 
+        - load project
+        - add absent fields from loaded project
+        - save project
+
+        """
+        file_name = os.path.join(self.projects_folder, "%s.yaml" % pid)
+        if os.path.isfile(file_name):
+            with open(file_name, "r") as fh:
+                old_project_data = yaml.load(fh)
+            project_data = self._deepupdate(old_project_data, project_data)
+        with open(file_name, "w") as fh:
+            yaml.dump(project_data, fh, default_flow_style=False)
+
+    def recheck_folders_and_params(self, pid, project, project_data=None):
+        if not project_data:
+            project_data = {}
+        for key in project_data:
+            if not key in project:
+                print "\tadded", key
+                project[key] = project_data[key]
+        self._init_data(project)
+        self.save(pid, project)
 
     def get_project(self, pid, settings_context=None, project_context=None, path_replacing=None):
         """ Get project data by pid. You can change settings and project fields according to given contexts.
@@ -177,17 +221,18 @@ class ProjectManager(object):
             result.extend(files)
         return list(set(result))
 
+    @staticmethod
+    def get_id_by_pid(pid, dataset_dict):
+        """ Get project id by pid."""
+        for dataset in dataset_dict:
+            for i, (_pid, project) in enumerate(dataset_dict[dataset]()):
+                if _pid == pid:
+                    return i, dataset 
+        return None, None
+
     def remove_project(self, pid):
         """ Remove project."""
         if not self._check_pid(pid):
             raise ProjectManagerException("PID (%s) doesn't exists." % pid)
         file_path = os.path.join(self.projects_folder, "%s.yaml" % pid)
         os.remove(file_path)
-
-    def save(self, pid, project_data):
-        """ Save project data to yaml project file. """
-        file_name = os.path.join(self.projects_folder, "%s.yaml" % pid)
-        with open(file_name, "w") as fh:
-            yaml.dump(project_data, fh, default_flow_style=False)
-
-

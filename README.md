@@ -316,7 +316,7 @@ To initiate available step you must add to subclass init_steps() method with lis
 - exp.get_as_dict(), returns {'name':..., 'steps': [s.as_dict(),...]}
 
 <a name="_exp_exe"/>
-### Experiment executin order:
+### Experiment execution order:
 
 ```python
 exp.execute(start_sid=0, end_sid=None, project_context=None)
@@ -420,14 +420,26 @@ Inner logic for uploading:
 <a name="_manager"/>
 ## Experiment manager
 
-An expeirment manager provide project settings persistence using yaml files:
+An expeirment manager provides project settings persistence using yaml files:
 
 ```python
 settings_class = AbstractExperimentSettings
-manager = ProjectManager(settings_class) 
+manager = ProjectManager(settings_class, config_path=None) 
 ```
 
-Upon initiation the manager is trying to read OS specific yaml configuration file in the parent directory:
+Config file contains:
+
+```python
+path_work_folder: /home/username/data
+path_workspace_folder: /home/username/Dropbox
+projects_folder: /home/username/managers/wgs
+url_status_update: http://localhost:3015/api/update/project/status
+url_ext_update: http://localhost:3015/api/update/project/exe
+url_project_update: http://localhost:3015/api/add/project
+url_experiment_update: http://localhost:3015/api/add/experiment
+```
+
+If not config_path is not provided then upon initiation the manager is trying to read OS specific yaml configuration file in the parent directory:
 
 - config.win.yaml
 - config.mac.yaml
@@ -451,7 +463,7 @@ Using settings from self.config it sets self.projects_folder (folder with projec
 ```python
 pid = "name"
 projecy_data = {'path_to': 'path'}
-manager.add_proejct(pid, project_data, init=False, force=False)
+manager.add_project(pid, project_data, init=False, force=False)
 ```
 
 With force flag project yaml file will be deleted, otherwise if a yaml file exists then the manager raise exception. After project adding the manager calls  self._init_project(...) which can be changed in subclasses for data initiation with project_data settings. 
@@ -472,6 +484,12 @@ project, settings = manager.get_project(pid)
 
 A project dictionary contains data from project's yaml file. A settings dictionary contains data from settings class with correct paths according to work_folder path and path_to path.
 
+Or reverse:
+
+```python
+id = get_id_by_pid(pid, dataset_dict):
+```
+
 ### Access to all project yaml files
 
 ```python
@@ -482,12 +500,6 @@ project_files = manager.get_all_projects()
 
 ```python
 manager.remove_project(pid)
-```
-
-### Project saving
-
-```python
-manager.save(pid, project_data)
 ```
 
 <a name="_models"/>
