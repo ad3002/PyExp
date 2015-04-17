@@ -272,7 +272,7 @@ class AbstractExperiment(object):
         self.name = 'default'
         if 'name' in kwargs:
             self.name = kwargs['name']
-        self.logger = None
+        self.logger = self.default_logger
         if 'logger' in kwargs:
             logger = kwargs['logger']
             if hasattr(logger, "__call__"):
@@ -402,8 +402,6 @@ class AbstractExperiment(object):
             if not self.force:
                 # skip finished
                 if step.check_value:
-                    if not step.name in self.project["status"]:
-                        self.project["status"][step.name] = None
                     status_p = self.project["status"][step.name]
                     if status_p == step.check_value:
                         exp_logger.warning("Step skipped. Step %s was previously computed with %s" % (step.name, status_p))
@@ -440,7 +438,7 @@ class AbstractExperiment(object):
                         self.settings[step.name] = result
             # post verification
             self.check_step(step, result)
-            # send to server
+            # update project
             self.logger_update_project(self.project["pid"], self.project)
 
     def execute_parallel(self, start_sid=0, end_sid=None, project_context=None, threads=1):
@@ -456,28 +454,20 @@ class AbstractExperiment(object):
     ### Steps checking section ### 
 
     def check_step(self, step, exe_result):
-        if step.check_f is None:
-            exp_logger.warning("Verification for step %s is absent" % step.name)
-            self.project["status"][step.name] = exe_result
-            self.logger_update_status(self.project["pid"],  step.name, exe_result)
-            return exe_result
+        """ Check step result.
+        """
         if not "status" in self.project:
             self.project["status"] = {}
         if not step.name in self.project["status"]:
             self.project["status"][step.name] = None
+        if step.check_f is None:
+            exp_logger.warning("Verification for step %s is absent" % step.name)
         if step.check_f:
             if not hasattr(step.check_f, "__call__"):
                 exp_logger.warning("Uncallable function for step %s" % step.name)
-                self.project["status"][step.name] = exe_result
-                self.logger_update_status(self.project["pid"],  step.name, exe_result)
-                return exe_result
             result = step.check_f(self.settings, self.project)
             if result is None:
                 exp_logger.info("Result for step %s is None" % step.name)
-            # send to server
-            self.project["status"][step.name] = result
-            self.logger_update_status(self.project["pid"],  step.name, result)
-            return result
         self.project["status"][step.name] = exe_result
         self.logger_update_status(self.project["pid"],  step.name, exe_result)
         return exe_result
@@ -544,7 +534,26 @@ class AbstractExperiment(object):
 
     ### Methods related to project status update ###
 
+    def default_logger(self, pid, name, step_sid, step_name, status):
+        """ Send data to url_exe_update url.
+        """
+        data  = {
+            "pid": pid,
+            "name": name,
+            "step_sid": step_sid,
+            "step_name": step_name,
+            "status": status,
+            "step": self.get_step(step_sid).as_dict(),
+        }
+        if not "config" in self.settings or not "url_exe_update" in self.settings["config"]:
+            print "To submit data to server set url_exe_update in config file."
+            return
+        url = self.settings["config"]["url_exe_update"]
+        self._send_to_server(url, data)
+
     def logger_update_status(self, pid, step_name, status):
+        """
+        """
         if not "config" in self.settings or not "url_status_update" in self.settings["config"]:
             print "To submit data to server set url_status_update in config file."
             return
@@ -557,6 +566,8 @@ class AbstractExperiment(object):
         self._send_to_server(url, data)
         
     def logger_update_project(self, pid, project):
+        """
+        """
         if self.manager:
             self.manager.save(pid, project)
         if not "config" in self.settings or not "url_project_update" in self.settings["config"]:
@@ -570,8 +581,7 @@ class AbstractExperiment(object):
         self._send_to_server(url, data)
 
     def logger_send_project(self, pid, project):
-        """
-        ???
+        """ Send project to server.
         :param pid:
         :param project:
         :return: None
@@ -604,22 +614,22 @@ class AbstractExperiment(object):
         :param url: server url
         :param data: data to send
         """
-        self._send_to_server(url, data)
+        self._send_to_server(url, data, force=True)
 
-    def _send_to_server(self, url, data):
+    def _send_to_server(self, url, data, force=False):
         """
         """
-        if not self.send_to_server:
+        if not force and not self.send_to_server:
             return
-        if self._skip_server_part:
-            print "Server part is skipped!"
+        if not force and self._skip_server_part:
+            exp_logger.info("Server part is skipped!")
             return
         attempts = 0
         data = urllib.urlencode(data)
         while attempts < 3:
             try:
                 resp = urllib.urlopen(url, data).read()
-                print resp
+                exp_logger.info("Failed sent to url %s with response: %s" % (url, reps))
                 break
             except Exception, e:
                 print e

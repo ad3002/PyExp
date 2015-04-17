@@ -341,7 +341,6 @@ An experiment class executes each added steps with following logic:
 10. Update project including saving project data to yaml file.
 
 
-
 <a name="_exp_check"/>
 ### Methods related to step checking
 
@@ -380,21 +379,43 @@ exp.check_steps()
 - exp.remove_project_data, remove all project's files and folders listed in settings
 
 <a name="_exp_logger"/>
-### Logger function example:
+### About logging
 
-    logger_func(pid, exp_name, step_sid, step_name, status)
+A Custom logger function interface, default logger funciton send data to self.settings["config"]["url_exe_update"] url.
+
+```python
+logger_func(pid, exp_name, step_sid, step_name, status)
+```
 
 Upload step status to self.settings["config"]["url_status_update"]:
 
-    exp.logger_update_status(pid, step_name, status)
-    
+```python
+exp.logger_update_status(pid, step_name, status)
+```
+
 Save project data and upload project to self.settings"config"]["url_project_update"]:
 
-    exp.logger_update_project(pid, project)
-    
+```python
+exp.logger_update_project(pid, project)
+# or
+exe.logger_send_project(pid, project)
+```
+
 Check all steps and upload project:
 
-    exp.check_and_upload_project()
+```python
+exp.check_and_upload_project()
+```
+
+Simple function for uploading anything with POST request:
+```python
+exp.upload_to_server(url, data)
+```
+
+Inner logic for uploading:
+- if self.send_to_server is None then skip uploading
+- if self._skip_server_part then skip uploading
+- try three times upload to server with forth fail set elf._skip_server_part to True.
 
 <a name="_manager"/>
 ## Experiment manager
