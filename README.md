@@ -29,6 +29,7 @@
     - [Working with folders](#_readers_folders)
     - [Working with nested folders](#_readers_folder_folders)
     - [Useful shortcuts](#_readers_shortcuts)
+- [App functions](#_app)
 
 <a name="_intro"/>
 ## Introduction
@@ -534,6 +535,14 @@ You can get model data as dictionary:
 
 ```python
 model_dict = model.get_as_dict()
+# or
+model_dict = model.as_dict()
+```
+
+Or as human friendly:
+
+```python
+model.print_human_friednly()
 ```
 
 In JSON format with optional preprosessing by preprocess_func:
@@ -543,6 +552,8 @@ model_json = model.get_as_json(preprocess_func=None)
 ```
 
 Model has preprocess_data method for any data preprocessing until returning. It can be implemented in nested classes.
+
+In model defined __setitem__ and __getitem__ so you can access them both as dictinary and as object attributes.
 
 <a name="_readers"/>
 ## IO simplification classes 
@@ -620,3 +631,7 @@ from PyExp.readers.abstract_reader import *
 - sc_process_folder(folder, cf, args_dict, mask=".")
 - sc_process_folder_to_other(folder, output_folder, cf, args_dict, mask=".", verbose=False)
 - read_pickle_file(pickle_file), get data
+
+<a name="_app"/>
+## App functions
+
