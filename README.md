@@ -11,6 +11,7 @@
 - [Experiment settings class](#_exp_settings)
 - [Experiment class](#_exp)
     - [Attributes](#_exp_attr)
+    - [Creation](#_exp_create)
     - [Initiation](#_exp_init)
     - [Initiation parameters](#_exp_init_params)
     - [Logging](#_exp_logger)
@@ -109,7 +110,6 @@ If you need output from command then use popen:
 output, error = runner.popen(command, silent=False)
 ```
 
-
 <a name="_step"/>
 ## Class for step descripion
 
@@ -121,6 +121,7 @@ Every step has following properties:
 - **save_output** flag, default False
 - **check_f**, function that check status of the step after execution, default is None
 - **check_p**, name of step that cab be successfully executed (it has status OK) before this step, default is None
+- **check_value**, output value from the step that will be checked in project statues
 
 Step initiation:
 
@@ -139,13 +140,22 @@ print step
 
 print step.get_as_dict().keys()
 >>> ['name', 'cf', 'check', 'pre', 'save_output']
+# or 
+print step.as_dict()
 ```
 
 <a name="_logger"/>
 ## Log wrapper
 
-<a name="_runner"/>
-## System command wrapper
+There are several loggers for various parts of experiment running:
+
+```python
+timer_logger = Logger('timer logger')
+exp_logger = Logger('exp logger')
+core_logger = Logger('core logger')
+runner_logger = Logger('run logger')
+trseeker_logger = Logger('trseeker')
+```
 
 <a name="_exp_settings"/>
 ## Experiment settings
@@ -156,9 +166,11 @@ Settings initiation:
 settings = AbstractExperimentSettings()
 settings.as_dict().keys()
 >>> ['files', 'folders', 'other', 'config']
+# or
+print settings.get_as_dict()
 ```
 
-Each subclass of AbstractExperimentSettings must have three dictionaries (files, folders, other) that keepproject's filenames, foldernames, and other parameters needed for workflow execution.
+Each subclass of AbstractExperimentSettings must have three dictionaries (files, folders, other) that keep project's filenames, foldernames, and other parameters needed for workflow execution.
 
 <a name="_exp"/>
 ## Class for experiment description
@@ -166,23 +178,61 @@ Each subclass of AbstractExperimentSettings must have three dictionaries (files,
 <a name="_exp_attr"/>
 ### Experiments attributes:
 
-- **settings**, settings object
-- **project**, project object
-- **name**, experiment name, default None
-- **logger**, function for logging, default None
-- **force**, skip prerequisite checking for steps, default False
-- **manager**, project manager object, default None
+- **settings**, settings dictionary
+- **project**, project dictionary
+- **name**, experiment name, default 'default', can be changed with kwargs['name']
+- **logger**, function for logging, default exp_logger, can be changed with kwargs['logger']
+- **force**, skip prerequisite checking for steps, default False, can be changed with kwargs['force']
+- **manager**, project manager object, default None, can be changed with kwargs['manager']
+- **send_to_server**, communicate with server during execution, default None, can be changed with kwargs['send_to_server']
 - **sp**, number of added steps
 - **pid**, current project pid
-- **all_steps**, steps dictionary
 - **sid2step**, sid to step dictionary
+- **all_steps**, steps dictionary
+- **settings["manager"]**, a link to manager instance
+- **settings["experiment"]**, a link to experiment instance
+
+<a name="_exp_create"/>
+### How to create new experiment 
+
+To create an experiment you should add self.all_steps list with step dictionaries in self.init_steps() method.
+
+```python
+class AnnotationExperiment(AbstractExperiment):
+    ''' Assembly annotation.
+    '''
+    def init_steps(self):
+        ''' Add avaliable steps.'''
+
+        self.all_steps = [
+            ## Reports
+            {
+                'pre': None,
+                'stage': "Reports",
+                'name': "report_raw",
+                'cf': report_raw_data_statistics,
+                'check': None,
+                'desc': 'report',
+            },
+            ## Data preparation
+            {
+                'pre': None,
+                'stage': "Preprocessing",
+                'name': "fastqc_raw",
+                'cf': cf_create_fastqc_reports_for_raw_reads,
+                'check': None,
+                'desc': 'Fastqc for raw files.',
+            },
+        ]
+```
+
 
 <a name="_exp_init"/>
 ### Experiment initiation:
 
 ```python
 project, settings = manager.get_project(pid)
-exp = AbstractExperiment(settings, project, name=None, force=False, logger=None, manager=None)
+exp = AbstractExperiment(settings, project, name=None, force=False, logger=None, manager=None, send_to_server=None)
 ```
 
 <a name="_exp_init_params"/>
@@ -196,6 +246,31 @@ exp = AbstractExperiment(settings, project, name=None, force=False, logger=None,
 - **manager**, project manager object, default None
 
 To initiate available step you must add to subclass init_steps() method with list of steps.
+
+
+<a name="_exp_exe"/>
+### Experiment executin order:
+
+```python
+exp.execute(start_sid=0, end_sid=None)
+```
+
+An experiment class executes each added steps with following logic:
+
+1. Refresh project settings from yaml file.
+2. If project data lacks "status" dictionary then it will be added.
+3. If status dictionary lacks step name then it will be added with None value
+4. Check preconditions:
+    - if force flag is true, then skip current step step status
+    - if status dictionary lacks prerequiste step name then it will be added with None value
+    - if previous step is not executed (status different from OK), then skip this step
+    - check current step status, if this step was previously executed then skip it
+5. If there is a logger function, then send a message about step start
+6. Execute step wrapped in Timer class
+7. If there is a logger function, then send a message about step finishing
+8. If flag save_output is true, then save step return to self.settings[step.name], if step returned a dictionaly then save key, values pairs into self.settings dictionary.
+9. Check current step status with self.check_step(step) method.
+10. Save project to yaml file.
 
 <a name="_exp_logger"/>
 ### Logger function example:
@@ -227,30 +302,6 @@ Check all steps and upload project:
 - exp.remove_step(sid)
 - exp.change_step(sid, new_step)
 - exp.get_as_dict(), returns {'name':..., 'steps': [s.as_dict(),...]}
-
-<a name="_exp_exe"/>
-### Experiment executin order:
-
-```python
-exp.execute(start_sid=0, end_sid=None)
-```
-
-An experiment class executes each added steps with following logic:
-
-1. Refresh project settings from yaml file.
-2. If project data lacks "status" dictionary then it will be added.
-3. If status dictionary lacks step name then it will be added with None value
-4. Check preconditions:
-	- if force flag is true, then skip current step step status
-	- if status dictionary lacks prerequiste step name then it will be added with None value
-	- if previous step is not executed (status different from OK), then skip this step
-	- check current step status, if this step was previously executed then skip it
-5. If there is a logger function, then send a message about step start
-6. Execute step wrapped in Timer class
-7. If there is a logger function, then send a message about step finishing
-8. If flag save_output is true, then save step return to self.settings[step.name], if step returned a dictionaly then save key, values pairs into self.settings dictionary.
-9. Check current step status with self.check_step(step) method.
-10. Save project to yaml file.
 
 <a name="_exp_check"/>
 ### Methods related to step checking
