@@ -120,7 +120,7 @@ Every step has following properties:
 - **cf**, a function
 - **save_output** flag, default False
 - **check_f**, function that check status of the step after execution, default is None
-- **check_p**, name of step that should be successfully executed (has status OK or value of check_p) before this step, default is None
+- **check_p**, name of step that should be successfully executed (**it should returns None or error text**) before this step, default is None
 - **check_value**, output value from the step that will be checked with check_p
 
 Step initiation:
@@ -181,7 +181,7 @@ Each subclass of AbstractExperimentSettings must have three dictionaries (files,
 - **settings**, settings dictionary
 - **project**, project dictionary
 - **name**, experiment name, default 'default', can be changed with kwargs['name']
-- **logger**, function for logging, default exp_logger, can be changed with kwargs['logger']
+- **logger**, function for logging, default self.default_logger, can be changed with kwargs['logger']
 - **force**, skip prerequisite checking for steps, default False, can be changed with kwargs['force']
 - **manager**, project manager object, default None, can be changed with kwargs['manager']
 - **send_to_server**, communicate with server during execution, default None, can be changed with kwargs['send_to_server']
@@ -319,25 +319,26 @@ To initiate available step you must add to subclass init_steps() method with lis
 ### Experiment executin order:
 
 ```python
-exp.execute(start_sid=0, end_sid=None)
+exp.execute(start_sid=0, end_sid=None, project_context=None)
 ```
 
 An experiment class executes each added steps with following logic:
 
-1. Refresh project settings from yaml file.
+1. Refresh project and settings from yaml file with manager instance using given project_context.
 2. If project data lacks "status" dictionary then it will be added.
 3. If status dictionary lacks step name then it will be added with None value
 4. Check preconditions:
-    - if force flag is true, then skip current step step status
-    - if status dictionary lacks prerequiste step name then it will be added with None value
-    - if previous step is not executed (status different from OK), then skip this step
-    - check current step status, if this step was previously executed then skip it
+    - if force flag is true, then skip precondition check (go to 5)
+    - if step contains step.check_value and it is equal to self.project["status"][step.name] then the current step will be skipped (go to 1)
 5. If there is a logger function, then send a message about step start
 6. Execute step wrapped in Timer class
+    - if step.check_p is defined and it's a function then run it. If step.check_p returns something then stop step execution, save result in self.project["status"][step.name] (go to 1)
+    - if step.input is None them simply run step.cf(self.settings, self.project)
+    - else there are some value in step.input then add it to step.cf as the last argument
 7. If there is a logger function, then send a message about step finishing
 8. If flag save_output is true, then save step return to self.settings[step.name], if step returned a dictionaly then save key, values pairs into self.settings dictionary.
-9. Check current step status with self.check_step(step) method.
-10. Save project to yaml file.
+9. Check current step status with self.check_step(step, cf_results) method.
+10. Update project including saving project data to yaml file.
 
 
 
