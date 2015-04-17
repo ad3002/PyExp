@@ -159,9 +159,9 @@ class Timer(object):
         minutes = int(delta) / 60
         seconds = int(delta) % 60
         hours = 0
-        if minites > 60:
-            hours = minites / 60
-            minites = minites % 60
+        if minutes > 60:
+            hours = minutes / 60
+            minutes = minutes % 60
         if hours:
             message += ' elapsed: %s h %s min %s sec ' % (hours, minutes, seconds)
         else:
