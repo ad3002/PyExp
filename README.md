@@ -330,10 +330,10 @@ An experiment class executes each added steps with following logic:
 3. If status dictionary lacks step name then it will be added with None value
 4. Check preconditions:
     - if force flag is true, then skip precondition check (go to 5)
-    - if step contains step.check_value and it is equal to self.project["status"][step.name] then the current step will be skipped (go to 1)
+    - if step contains step.check_value and it is equal to self.project["status"]\[step.name\] then the current step will be skipped (go to 1)
 5. If there is a logger function, then send a message about step start
 6. Execute step wrapped in Timer class
-    - if step.check_p is defined and it's a function then run it. If step.check_p returns something then stop step execution, save result in self.project["status"][step.name] (go to 1)
+    - if step.check_p is defined and it's a function then run it. If step.check_p returns something then stop step execution, save result in self.project["status"]\[step.name\] (go to 1)
     - if step.input is None them simply run step.cf(self.settings, self.project)
     - else there are some value in step.input then add it to step.cf as the last argument
 7. If there is a logger function, then send a message about step finishing
@@ -345,7 +345,7 @@ An experiment class executes each added steps with following logic:
 <a name="_exp_check"/>
 ### Methods related to step checking
 
-There is an additional verification with step.check_f function if it is provided for the step, otherwise step returns value will be saved in project["status"][step.name] variable, step.check_f should be usual core function that takes settings, project arguments and returns some value that be saved in project["status"][step.name] variable. After each step check logger_update_project is called, so you can update server value with it if send_to_server is True.
+There is an additional verification with step.check_f function if it is provided for the step, otherwise step returns value will be saved in project["status"]\[step.name\] variable, step.check_f should be usual core function that takes settings, project arguments and returns some value that be saved in project["status"]\[step.name\] variable. After each step check logger_update_project is called, so you can update server value with it if send_to_server is True.
 
 Check step and returns None or result of checking:
 
@@ -382,13 +382,13 @@ exp.check_steps()
 <a name="_exp_logger"/>
 ### About logging
 
-A Custom logger function interface, default logger funciton send data to self.settings["config"]["url_exe_update"] url.
+A Custom logger function interface, default logger funciton send data to self.settings["config"]\["url_exe_update"\] url.
 
 ```python
 logger_func(pid, exp_name, step_sid, step_name, status)
 ```
 
-Upload step status to self.settings["config"]["url_status_update"]:
+Upload step status to self.settings["config"]\["url_status_update"\]:
 
 ```python
 exp.logger_update_status(pid, step_name, status)
