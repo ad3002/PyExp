@@ -27,6 +27,7 @@ setup(
     install_requires=[
         'pyyaml >= 3.0',
         'simplejson >= 1.0',
+        'logbook >= 0.7',
     ],
     classifiers=[
         'Development Status :: 4 - Beta',

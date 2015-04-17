@@ -4,23 +4,24 @@
     
     A microframework for small computational experiments.
 
-    :copyright: (c) 2013 by Aleksey Komissarov.
+    :copyright: (c) 2013-2015 by Aleksey Komissarov.
     :license: BSD, see LICENSE for more details.
 """
 
-__version__ = '0.5.2'
+__version__ = '1.0.0'
 
 from .abstract_experiment import Timer
 from .abstract_experiment import AbstractStep
 from .abstract_experiment import AbstractExperimentSettings
 from .abstract_experiment import AbstractExperiment
 from .abstract_experiment import core_logger
+from .abstract_experiment import exp_logger
 from .abstract_experiment import trseeker_logger
 from .abstract_experiment import runner
 from .abstract_manager import ProjectManagerException
 from .abstract_model import AbstractModel
 from .abstract_manager import ProjectManager
-from .abstract_reader import WizeOpener
+from .abstract_reader import WiseOpener
 from .abstract_reader import AbstractFileIO
 from .abstract_reader import AbstractFolderIO
 from .abstract_reader import AbstractFoldersIO
@@ -39,7 +40,7 @@ from .app import run_app
 __all__ = [
     Timer, AbstractStep, AbstractExperiment, AbstractExperimentSettings,
     ProjectManagerException, AbstractModel, ProjectManager,
-    WizeOpener, AbstractFileIO, AbstractFolderIO, AbstractFoldersIO,
+    WiseOpener, AbstractFileIO, AbstractFolderIO, AbstractFoldersIO,
     sc_iter_filepath_folder,
     sc_iter_filename_folder,
     sc_iter_path_name_folder,
@@ -51,6 +52,7 @@ __all__ = [
     read_pickle_file,
     run_app,
     core_logger,
+    exp_logger,
     trseeker_logger,
     runner,
 ]
