@@ -11,7 +11,10 @@ import time
 import os
 import urllib
 import simplejson
-from logbook import Logger
+try:
+    from logbook import Logger
+except:
+    print "No logbook installed"
 import subprocess
 
 STARTED = "Started"
@@ -30,7 +33,7 @@ class ProcessRunner(object):
     def __init__(self):
         pass
 
-    def run(self, command, log_file=None, verbose=True):
+    def run(self, command, log_file=None, verbose=True, mock=False):
         """
         Run command in shell.
         :param command: one command or list ot  commands for shell
@@ -43,8 +46,10 @@ class ProcessRunner(object):
             with open(log_file, "a") as fh:
                 fh.write("%s\n" % command)
         if verbose:
+            print(command)
             runner_logger.info(command)
-        os.system(command)
+        if not mock:
+            os.system(command)
 
     def run_batch(self, commands):
         """
@@ -90,7 +95,7 @@ class ProcessRunner(object):
         running = []
         while commands:
             while len(running) > cpu:
-                runner_logger.debug("Checking %s processes" % len(running))
+                runner_logger.debug("Checking %s processes from (%s)" % (len(running), len(commands)))
                 for i, p in enumerate(running):
                     returncode = p.poll()
                     if returncode is not None:
@@ -101,7 +106,7 @@ class ProcessRunner(object):
                         running[i] = None
                         running = [x for x in running if x is not None]
                         break
-                time.sleep(10)
+                time.sleep(1)
             command = commands.pop()
             runner_logger.info(command)
             if not mock:
@@ -628,8 +633,9 @@ class AbstractExperiment(object):
         data = urllib.urlencode(data)
         while attempts < 3:
             try:
-                resp = urllib.urlopen(url, data).read()
-                exp_logger.info("Failed sent to url %s with response: %s" % (url, reps))
+                exp_logger.info("Sending data to url %s..." % (url))
+                response = urllib.urlopen(url, data).read()
+                exp_logger.info("Failed sent to url %s with response: %s" % (url, response))
                 break
             except Exception, e:
                 print e
