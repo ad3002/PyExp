@@ -235,6 +235,13 @@ class AbstractFolderIO(object):
                 if re.search(self.mask, name):
                     yield name
 
+    def iter_folders(self):
+        """ iter over folders in folder. Return folder name."""
+        for root, dirs, files in os.walk(self.folder, topdown=False):
+            for folder in dirs:
+                if re.search(self.mask, folder):
+                    yield folder
+
     def get_files(self):
         """ Get files in folder. Return file name."""
         result = []
@@ -325,6 +332,13 @@ def sc_iter_filename_folder(folder, mask="."):
     reader = AbstractFolderIO(folder, mask=mask)
     for filename in reader.iter_files():
         yield filename
+
+
+def sc_iter_folders(folder, mask="."):
+    """ Shortcut for iterating folders in given folder."""
+    reader = AbstractFolderIO(folder, mask=mask)
+    for folder in reader.iter_folders():
+        yield folder
 
 
 def sc_iter_path_name_folder(folder, mask="."):
