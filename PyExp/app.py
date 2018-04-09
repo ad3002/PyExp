@@ -222,7 +222,8 @@ def check_task(dataset_gen,
 def run_app(exp_class, exp_settings_class, manager_class, dataset_dict):
     #TODO: add check command
     #TODO: add submit command
-    usage = ("command task1,task2 from to dataset"
+    usage = ("command task1,task2 from to dataset, e.g."
+                      "\n\tforce annotate human"
                       "\nOR\ncreate dataset"
                       "\nOR\nshow dataset"
                       "\nOR\ncheck dataset"
