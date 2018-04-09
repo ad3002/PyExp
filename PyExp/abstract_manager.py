@@ -11,10 +11,6 @@ import yaml
 import platform
 from logbook import Logger
 
-
-manager_logger = Logger('Manager logger')
-
-
 class ProjectManagerException(Exception):
     """ Simple exceptions class for project manager."""
 
@@ -33,13 +29,19 @@ class ProjectManager(object):
     Project PID is a yaml file name.
     """
 
+    config_path = None
+
     def __init__(self, settings_class, config_path=None):
         """ Init projects_folder. 
         Manager loads settings from default location in PySatDNA root or from given config_path.
         Then create work and projects folders if they were not found.
         And set config values for settings class.
         """
-        self.load_config(config_path)
+        self.manager_logger = Logger('Manager logger')
+        if config_path:
+            self.load_config(config_path)
+        else:
+            self.load_config(self.config_path)
         self.projects_folder = self.config["projects_folder"]
         self.work_folder = self.config["path_work_folder"]
         self.settings_class = settings_class
@@ -55,8 +57,8 @@ class ProjectManager(object):
         if config_path:
             file_path = config_path
             if not os.path.isfile(file_path):
-                message = "ERROR: Check settings, %s" % e
-                manager_logger.error(message)
+                message = "ERROR with open config file: %s" % file_path
+                self.manager_logger.error(message)
                 raise ProjectManagerException(message)
         else:      
             self.os = platform.system()
@@ -72,8 +74,8 @@ class ProjectManager(object):
             with open(file_path) as fh:
                 self.config = yaml.load(fh)
         except Exception, e:
-            manager_logger.error("ERROR: Check settings, %s" % e)
-            manager_logger.warning("Loading default settings")
+            self.manager_logger.error("ERROR with open config file: %s" % file_path)
+            self.manager_logger.warning("Loading default settings")
             self.config = {
                 'path_work_folder': 'data',
                 'path_workspace_folder': '../..',
@@ -95,7 +97,7 @@ class ProjectManager(object):
         assert isinstance(project_data, dict)
         self.force_folder_creation = force_folder_creation
         if not "path_to" in project_data:
-            manager_logger.error("Please add path_to parameter to project")
+            self.manager_logger.error("Please add path_to parameter to project")
             raise ProjectManagerException("Please add path_to parameter to project")
         # check pid existence
         if force:
@@ -116,7 +118,7 @@ class ProjectManager(object):
         file_path = os.path.join(self.projects_folder, "%s.yaml" % pid)
         if os.path.isfile(file_path):
             return True
-        manager_logger.warning("Can't find %s" % file_path)
+        self.manager_logger.error("Can't find %s" % file_path)
         return False
 
     def _init_project(self, project_data):
@@ -127,12 +129,12 @@ class ProjectManager(object):
         """ Init project data."""
         project_folder = os.path.join(self.work_folder, project["path_to"])
         if not os.path.isdir(project_folder):
-            manager_logger.info("Create folder %s" % project_folder)
+            self.manager_logger.info("Create folder %s" % project_folder)
             os.makedirs(project_folder)
         for folder_name, folder_path in self.settings_class.folders.items():
             folder = os.path.join(self.work_folder, project["path_to"], folder_path)
             if not os.path.isdir(folder) and self.force_folder_creation:
-                manager_logger.info("Create folder %s" % folder)
+                self.manager_logger.info("Create folder %s" % folder)
                 os.makedirs(folder)
 
     def _deepupdate(self, original, update):
