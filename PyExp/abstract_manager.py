@@ -7,9 +7,16 @@
 ''' Code related to ProjectManager.
 '''
 import os
-import yaml
+try:
+    import yaml
+except:
+    print("Install pyyaml module")
 import platform
-from logbook import Logger
+try:
+    from logbook import Logger
+except:
+    print("Install logbook module")
+
 
 class ProjectManagerException(Exception):
     """ Simple exceptions class for project manager."""
@@ -73,7 +80,7 @@ class ProjectManager(object):
         try:
             with open(file_path) as fh:
                 self.config = yaml.load(fh)
-        except Exception, e:
+        except Exception as e:
             self.manager_logger.error("ERROR with open config file: %s" % file_path)
             self.manager_logger.warning("Loading default settings")
             self.config = {
@@ -170,7 +177,7 @@ class ProjectManager(object):
             project_data = {}
         for key in project_data:
             if not key in project:
-                print "\tadded", key
+                print("\tadded", key)
                 project[key] = project_data[key]
         self._init_data(project)
         self.save(pid, project)

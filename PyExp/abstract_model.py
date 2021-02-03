@@ -5,7 +5,12 @@
 #@author: Aleksey Komissarov
 #@contact: ad3002@gmail.com 
 
-import simplejson
+try:
+    import simplejson
+except:
+    print("Install simplejson module")
+
+
 
 class AbstractModel(object):
     """ Сlass for data wrapping.
@@ -88,11 +93,11 @@ class AbstractModel(object):
                     data = []
                 data = ",".join([str(x) for x in data])
             try:
-                print print_string.format(attr, data.strip())
+                print(print_string.format(attr, data.strip()))
             except UnicodeEncodeError:
                 data = unicode(data).strip()
                 result.append()
-                print print_string.format(attr, data.strip())
+                print(print_string.format(attr, data.strip()))
 
     def get_as_string(self, dumpable_attributes):
         """ Get string representation with fields
@@ -117,13 +122,13 @@ class AbstractModel(object):
                     value = value.split(",")
                     value = [self.list_attributes_types[key](x) for x in value]
                 setattr(self, key, value)
-            except ValueError, e:
-                print self.dumpable_attributes
-                print dictionary.items()
+            except ValueError as e:
+                print(self.dumpable_attributes)
+                print(dictionary.items())
                 raise ValueError(e)
-            except TypeError, e:
-                print self.dumpable_attributes
-                print dictionary.items()
+            except TypeError as e:
+                print(self.dumpable_attributes)
+                print(dictionary.items())
                 raise TypeError(e)
 
     def set_with_list(self, data):
@@ -134,7 +139,7 @@ class AbstractModel(object):
             if hasattr(self, "alt_dumpable_attributes") and len(self.alt_dumpable_attributes) == n:
                 dumpable_attributes = self.alt_dumpable_attributes
             else:
-                print data
+                print(data)
                 raise Exception("Wrong number of fields in data.")
         for i, value in enumerate(data):
             key = dumpable_attributes[i]

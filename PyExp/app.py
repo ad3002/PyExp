@@ -9,9 +9,15 @@ import os
 import re
 import shutil
 import yaml
-from abstract_experiment import AbstractStep
-from abstract_manager import ProjectManagerException
-from logbook import Logger
+from PyExp.abstract_experiment import AbstractStep
+from PyExp.abstract_manager import ProjectManagerException
+try:
+    from logbook import Logger
+
+except:
+    def Logger(m):
+        print(m)
+    print("Install logbook module")
 
 app_logger = Logger('App logger')
 
@@ -25,13 +31,13 @@ def _create_projects(exp_settings_class, manager_class, all_projects):
             project, settings = manager.get_project(pid)
             try:
                 manager.recheck_folders_and_params(pid, project, project_data=project_data)       
-            except OSError, e:
+            except OSError as e:
                 app_logger.error("OSError: %s" % e)
             app_logger.warning("Project %s was added early" % pid)
-        except AttributeError, e:
+        except AttributeError as e:
             app_logger.error("ERROR: please, check that all settings given as dictionaries, not sets. (%s)" % e)
             raise Exception(e)
-        except ProjectManagerException, e:
+        except ProjectManagerException as e:
             manager.add_project(pid, project_data, init=True)
             app_logger.info("Project %s added" % pid)
 
@@ -40,7 +46,7 @@ def execute(args, usage, dataset_dict, exp_settings, exp_class, manager_class):
     ''' Execute experiment with givent args.
     '''
     if not len(args) in [5,7]:
-        print usage
+        print(usage)
         sys.exit(0)
     command = args[0]
     tasks = args[1]
@@ -53,13 +59,13 @@ def execute(args, usage, dataset_dict, exp_settings, exp_class, manager_class):
         settings_context = args[5]
         project_context = args[6]
     if not dataset in dataset_dict:
-        print "Available datasets:", ", ".join(dataset_dict.keys())
+        print("Available datasets: %s" % ", ".join(dataset_dict.keys()))
         sys.exit(0)
     dataset = dataset_dict[dataset]
     commands = ["run","force","check"]
     if not  command.startswith("rw_"):
         if not command in commands:
-            print "Available commands:", commands
+            print("Available commands: %s" % commands)
             sys.exit(0)
     if command == "run":
         execute_task(dataset, 
@@ -122,10 +128,10 @@ def add_step(exp, task, manager, pid):
     s = exp.find_step(task)
     input = None
     if not s:
-        print "Unknown step name:", task
-        print "Avaliable steps: " 
+        print("Unknown step name:" % task)
+        print("Avaliable steps: ")
         for x in exp.get_available_steps():
-            print x["name"]
+            print("\t%s" % x["name"])
         sys.exit(0)
     if "manager" in s and s["manager"]:
             input = {"manager":manager, 
@@ -167,22 +173,22 @@ def execute_task(dataset_gen,
         dataset = dataset_gen()
     n = len(dataset)
     for i, (pid, project_init) in enumerate(dataset):
-        print i, n, pid, task
+        print(i, n, pid, task)
         experiment_settings = exp_settings_class()
         manager = manager_class(experiment_settings)
         project, settings = manager.get_project(pid, settings_context=settings_context, project_context=project_context, path_replacing=path_replacing)
         exp = exp_class(settings, project, name=exp_name, manager=manager, force=force)
         if "," in task:
-            print "Complex task"
+            print("Complex task")
             tasks = task.strip().split(",")
             for t in tasks:
                 add_step(exp, t, manager, pid)
         else:
-            print "Simple task"
+            print("Simple task")
             add_step(exp, task, manager, pid)
         exp.execute(project_context=project_context)
-        print "\a"
-    print "\a\a\a\a"
+        print("\a")
+    print("\a\a\a\a")
 
 def check_task(dataset_gen, 
                                 task, 
@@ -202,22 +208,22 @@ def check_task(dataset_gen,
         dataset = dataset_gen()
     n = len(dataset)
     for i, (pid, project_init) in enumerate(dataset):
-        print i, n, pid, task
+        print(i, n, pid, task)
         experiment_settings = exp_settings_class()
         manager = manager_class(experiment_settings)
         project, settings = manager.get_project(pid)
         exp = exp_class(settings, project, name=exp_name, manager=manager, force=force)
         if "," in task:
-            print "Complex task"
+            print("Complex task")
             tasks = task.strip().split(",")
             for t in tasks:
                 add_step(exp, t, manager, pid)
         else:
-            print "Simple task"
+            print("Simple task")
             add_step(exp, task, manager, pid)
         exp.check_steps()
-        print "\a"
-    print "\a\a\a\a"
+        print("\a")
+    print("\a\a\a\a")
 
 def run_app(exp_class, exp_settings_class, manager_class, dataset_dict):
     #TODO: add check command
@@ -239,24 +245,24 @@ def run_app(exp_class, exp_settings_class, manager_class, dataset_dict):
                 all_projects = dataset_dict[args[1]]()
                 _create_projects(exp_settings_class, manager_class, all_projects)
             else:
-                print "Available datasets:", ", ".join(dataset_dict.keys())
+                print("Available datasets:", ", ".join(dataset_dict.keys()))
                 sys.exit(1)
         elif args[0] == "show":
             if args[1] in dataset_dict:
                 all_projects = dataset_dict[args[1]]()
                 for i, project in enumerate(all_projects):
-                    print i, project
+                    print(i, project)
             else:
-                print "Available datasets:", ", ".join(dataset_dict.keys())
+                print("Available datasets:", ", ".join(dataset_dict.keys()))
                 sys.exit(1)
         elif args[0] == "yaml":
             file_name = args[1]
             try:
                 with open(file_name) as fh:
                     data = yaml.load(fh.read())
-            except Exception, e:
-                print e
-                print "Can't read yaml file %s" % file_name
+            except Exception as e:
+                print(e)
+                print("Can't read yaml file %s" % file_name)
                 sys.exit(1)
             try:
                 if type(data["steps"]) is list:
@@ -264,8 +270,8 @@ def run_app(exp_class, exp_settings_class, manager_class, dataset_dict):
                 if "data" in data:
                     dataset_items = [x[0] for x in dataset_dict[data["dataset"]]()]
                     if not data["data"] in dataset_items:
-                        print "Wrong data parameter in yaml file."
-                        print "Available values:", ",".join(dataset_items)
+                        print("Wrong data parameter in yaml file.")
+                        print("Available values:", ",".join(dataset_items))
                         sys.exit(1)
                     data["start"] =  dataset_items.index(data["data"])
                     data["end"] = data["start"] + 1
@@ -282,11 +288,11 @@ def run_app(exp_class, exp_settings_class, manager_class, dataset_dict):
                     data["settings_context"],
                     data["project_context"],
                 ]
-            except Exception, e:
-                print e
-                print "Necessary yaml fields: command (str), steps (list), start (int), end (int), dataset (str)"
-                print "Optional fields: data (str), settings_context (dict), project_context (dict)"
-                print "OR you may generate a yaml file with: 'yaml generate file_name' command"
+            except Exception as e:
+                print(e)
+                print("Necessary yaml fields: command (str), steps (list), start (int), end (int), dataset (str)")
+                print("Optional fields: data (str), settings_context (dict), project_context (dict)")
+                print("OR you may generate a yaml file with: 'yaml generate file_name' command")
                 sys.exit(1)
 
             execute(args,
@@ -297,7 +303,7 @@ def run_app(exp_class, exp_settings_class, manager_class, dataset_dict):
                 manager_class
             )
         else:
-            print usage
+            print(usage)
             sys.exit(1)
     elif len(args) == 3:
 

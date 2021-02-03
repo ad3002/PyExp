@@ -10,11 +10,20 @@ Experiment abstraction.
 import time
 import os
 import urllib
-import simplejson
 try:
+    import simplejson
     from logbook import Logger
 except:
-    print "No logbook installed"
+    class Logger(object):
+
+        def __init__(self, t):
+            self.type = t
+
+        def info(self, m):
+            print(self.type, m)
+
+        
+    print("No logbook installed")
 import subprocess
 
 STARTED = "Started"
@@ -524,13 +533,13 @@ class AbstractExperiment(object):
         """ Remove all project data.
         """
         for file_name in self.settings["files"]:
-            print "Removing file %s ..." % file_name
+            print("Removing file %s ..." % file_name)
             try:
                 os.unlink(file_name)
             except:
-                print "Can't remove %s" % file_name
+                print("Can't remove %s" % file_name)
         for folder_name in self.settings['folders']:
-            print "Removing folder %s ..." % folder_name
+            print("Removing folder %s ..." % folder_name)
             for root, dirs, files in os.walk(folder_name, topdown=False):
                 for name in files:
                     os.remove(os.path.join(root, name))
@@ -551,7 +560,7 @@ class AbstractExperiment(object):
             "step": self.get_step(step_sid).as_dict(),
         }
         if not "config" in self.settings or not "url_exe_update" in self.settings["config"]:
-            print "To submit data to server set url_exe_update in config file."
+            print("To submit data to server set url_exe_update in config file.")
             return
         url = self.settings["config"]["url_exe_update"]
         self._send_to_server(url, data)
@@ -560,7 +569,7 @@ class AbstractExperiment(object):
         """
         """
         if not "config" in self.settings or not "url_status_update" in self.settings["config"]:
-            print "To submit data to server set url_status_update in config file."
+            print("To submit data to server set url_status_update in config file.")
             return
         url = self.settings["config"]["url_status_update"]
         data = {
@@ -576,7 +585,7 @@ class AbstractExperiment(object):
         if self.manager:
             self.manager.save(pid, project)
         if not "config" in self.settings or not "url_project_update" in self.settings["config"]:
-            print "To submit data to server set url_project_update in config file."
+            print("To submit data to server set url_project_update in config file.")
             return
         url = self.settings["config"]["url_project_update"]
         project = simplejson.dumps(project)
@@ -592,7 +601,7 @@ class AbstractExperiment(object):
         :return: None
         """
         if not "config" in self.settings or not "url_project_update" in self.settings["config"]:
-            print "To submit data to server set url_project_update in config file."
+            print("To submit data to server set url_project_update in config file.")
             return
         url = self.settings["config"]["url_project_update"]
         project = simplejson.dumps(project)
@@ -637,8 +646,8 @@ class AbstractExperiment(object):
                 response = urllib.urlopen(url, data).read()
                 exp_logger.info("Failed sent to url %s with response: %s" % (url, response))
                 break
-            except Exception, e:
-                print e
+            except Exception as e:
+                print(e)
                 time.sleep(3)
                 attempts += 1
         if attempts == 3:

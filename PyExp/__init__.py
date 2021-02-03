@@ -4,11 +4,11 @@
     
     A microframework for small computational experiments.
 
-    :copyright: (c) 2013-2015 by Aleksey Komissarov.
+    :copyright: (c) 2013-2020 by Aleksey Komissarov.
     :license: BSD, see LICENSE for more details.
 """
 
-__version__ = '0.9.0'
+__version__ = '0.9.3'
 
 from .abstract_experiment import Timer
 from .abstract_experiment import AbstractStep
