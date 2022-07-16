@@ -7,3 +7,5 @@ _build
 /build/
 /PyExp.egg-info/
 *.dropbox
+.pypirc
+Icon
